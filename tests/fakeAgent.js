@@ -274,11 +274,12 @@ function noMatchPath(turn, query) {
   turn.emit({ type: 'prompts', alignment: 'horizontal', editable: true, items: [{ id: 'find-approved', text: COPY.promptFindApproved }] });
 }
 
-// Frame 7 answer: a choice shows all products in its categories. Order: catalog order until Lisa decides (Q4).
+// Frame 7 answer: a choice shows all products in its categories. Order (Q4, option B): approved for this
+// buyer first, then catalog order.
 // The step line and the text are drafts. The spec has no copy for the result of a choice.
 function choicePath(turn, choice) {
   const id = `step-${(turn.stepCount += 1)}`;
-  const products = productsForChoice(choice);
+  const products = productsForChoice(choice, turn.ctx.experience.id);
   const categories = joinNames(choice.categories);
   turn.emit({ type: 'step', id, status: 'loading', text: `Checking products for "${choice.label}"` });
   turn.emit({ type: 'step', id, status: 'success', text: `Checked products in ${categories}. ${products.length} found.`, header: `Checked products for "${choice.label}"` }, turn.ctx.stepDelayMs);

@@ -6,9 +6,32 @@ function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Q3 (Lisa's answers Nov 16, option A): code finds product names in Claude's final text, only among
-// this turn's tool results. It looks for the FULL product name, case-insensitive, as whole words.
-// A short name (for example "Tunnelport" for "Tunnelport Access Server (BYOL)") doesn't match.
+function wordPattern(words) {
+  return new RegExp(`(^|[^A-Za-z0-9])${escapeRegExp(words)}(?![A-Za-z0-9])`, 'i');
+}
+
+// True when the text has the word (whole word, any case for the other letters) with a capital first letter.
+function hasCapitalized(text, word) {
+  const pattern = new RegExp(wordPattern(word).source, 'gi');
+  for (const match of text.matchAll(pattern)) {
+    const first = match[0].slice(match[1].length)[0];
+    if (first && first === first.toUpperCase() && first !== first.toLowerCase()) return true;
+  }
+  return false;
+}
+
+function firstWord(name) {
+  return name.trim().split(/\s+/)[0].toLowerCase();
+}
+
+// Q3 (Lisa's answers Nov 16, option A, then option B in the step 1 report answers): code finds product
+// names in Claude's final text, only among this turn's tool results. Case-insensitive, whole words.
+// 1. The FULL product name matches.
+// 2. A short name matches too, when it starts with a capital letter in Claude's text, and exactly 1
+//    product in this turn's results starts with that word (Lisa's answer Nov 16, step 1 fixes report,
+//    item 9). "Tunnelport" finds Tunnelport Access Server (BYOL). "a managed service" doesn't find
+//    Managed Watchtail Threat Detection. "Watchtail" finds nothing when more than 1 result starts
+//    with "Watchtail".
 // Returns the products in the order of the candidates (ranked tool-result order).
 export function namedProducts(text, candidates) {
   const found = new Set();
@@ -16,11 +39,19 @@ export function namedProducts(text, candidates) {
   // Longest names first, so a name inside a longer name can't match twice.
   const byLength = [...candidates].sort((a, b) => b.name.length - a.name.length);
   for (const product of byLength) {
-    const pattern = new RegExp(`(^|[^A-Za-z0-9])${escapeRegExp(product.name)}(?![A-Za-z0-9])`, 'i');
+    const pattern = wordPattern(product.name);
     if (pattern.test(remaining)) {
       found.add(product.product_id);
-      remaining = remaining.replace(pattern, '$1 ');
+      remaining = remaining.replace(new RegExp(pattern.source, 'gi'), '$1 ');
     }
+  }
+  // Short names: the first word of a product name, when no other result starts with that word.
+  const unique = candidates.filter((product, i) => candidates.findIndex((p) => p.product_id === product.product_id) === i);
+  for (const product of unique) {
+    if (found.has(product.product_id)) continue;
+    const word = firstWord(product.name);
+    const sameStart = unique.filter((p) => firstWord(p.name) === word);
+    if (sameStart.length === 1 && hasCapitalized(remaining, word)) found.add(product.product_id);
   }
   return candidates.filter((product) => found.has(product.product_id));
 }

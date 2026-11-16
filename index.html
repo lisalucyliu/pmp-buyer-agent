@@ -6,7 +6,9 @@
     <title>Private Marketplace buyer agent</title>
   </head>
   <body>
-    <div id="top-nav"></div>
+    <!-- App layout "only supports sticky header and footer": the top navigation uses position: sticky,
+         with a z-index from the Top navigation page (1002 to 1999). -->
+    <div id="top-nav" style="position: sticky; top: 0; z-index: 1002"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

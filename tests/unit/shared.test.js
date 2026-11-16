@@ -109,7 +109,7 @@ test('frame 7: "security" gets the 4 fixed choices in the spec order', () => {
   ]);
 });
 
-test('frame 7: a choice shows ALL products in its categories (catalog order until Lisa decides)', () => {
+test('frame 7: a choice shows ALL products in its categories (catalog order when no buyer is given)', () => {
   const [threat, firewall, compliance, server] = clarifyChoices('Security', []);
   assert.deepEqual(names(productsForChoice(firewall)), ['Meshwire', 'Tunnelport Access Server (BYOL)', 'Bastion NGFW VM', 'Shalecrest UTM 9']);
   assert.deepEqual(names(productsForChoice(threat)), [
@@ -131,6 +131,24 @@ test('frame 7: with the current catalog no choice result has more than 5 product
   const categories = new Set(PRODUCTS.map((p) => p.category));
   for (const category of categories) assert.ok(productsForChoice({ categories: [category] }).length <= 5, category);
   for (const choice of clarifyChoices('security', [])) assert.ok(productsForChoice(choice).length <= 5, choice.label);
+});
+
+test('Q4 (option B), Riley: approved for Riley first, then catalog order', () => {
+  const [threat, firewall, compliance] = clarifyChoices('security', []);
+  assert.deepEqual(names(productsForChoice(firewall, 'Engineering')), ['Tunnelport Access Server (BYOL)', 'Meshwire', 'Bastion NGFW VM', 'Shalecrest UTM 9']);
+  assert.deepEqual(names(productsForChoice(threat, 'Engineering')), [
+    'Talonix Platform', 'Managed Watchtail Threat Detection', 'Ironveil Horizon', 'Holdfast Incident Response Retainer',
+  ]);
+  assert.deepEqual(names(productsForChoice(compliance, 'Engineering')), ['Auditlane']);
+});
+
+test('Q4 (option B), Sam: approved for Sam first, then catalog order', () => {
+  const [threat, firewall] = clarifyChoices('security', []);
+  // Tunnelport Access Server (BYOL) is approved for Riley only, so for Sam the list stays in catalog order.
+  assert.deepEqual(names(productsForChoice(firewall, 'Finance')), ['Meshwire', 'Tunnelport Access Server (BYOL)', 'Bastion NGFW VM', 'Shalecrest UTM 9']);
+  assert.deepEqual(names(productsForChoice(threat, 'Finance')), [
+    'Talonix Platform', 'Managed Watchtail Threat Detection', 'Ironveil Horizon', 'Holdfast Incident Response Retainer',
+  ]);
 });
 
 // ---- Request checks (decision 18) ----
@@ -227,14 +245,33 @@ test('Q3: code lists the products Claude\'s text names, among this turn\'s resul
   assert.deepEqual(names(listForTurn({ text, searchResults: results })), ['Meshwire', 'Tunnelport Access Server (BYOL)', 'Shalecrest UTM 9']);
 });
 
-test('Q3 short name: "Tunnelport" alone does NOT get a List item for Tunnelport Access Server (BYOL)', () => {
+test('Q3 short name (option B): "Tunnelport" finds Tunnelport Access Server (BYOL), the only result that starts with that word', () => {
   const results = searchProducts('VPN').shown;
   const text = 'Tunnelport is approved for purchase. Meshwire isn\'t approved.';
-  assert.deepEqual(names(namedProducts(text, results)), ['Meshwire']);
-  // Without "(BYOL)" it also doesn't match.
-  assert.deepEqual(names(namedProducts('Tunnelport Access Server is approved.', results)), []);
+  assert.deepEqual(names(namedProducts(text, results)), ['Meshwire', 'Tunnelport Access Server (BYOL)']);
+  // A longer short form also matches, because it contains the first word.
+  assert.deepEqual(names(namedProducts('Tunnelport Access Server is approved.', results)), ['Tunnelport Access Server (BYOL)']);
   // Case doesn't matter.
   assert.deepEqual(names(namedProducts('tunnelport access server (byol) is approved.', results)), ['Tunnelport Access Server (BYOL)']);
+  // Part of a word doesn't match.
+  assert.deepEqual(names(namedProducts('Tunnelports are approved.', results)), []);
+  // A short name needs a capital first letter (item 9).
+  assert.deepEqual(names(namedProducts('tunnelport is approved.', results)), []);
+});
+
+test('Q3 short name (item 9): "a managed service" doesn\'t find Managed Watchtail Threat Detection. "Managed" does', () => {
+  const results = [byName('Managed Watchtail Threat Detection'), byName('Meshwire')];
+  assert.deepEqual(names(namedProducts('You can use a managed service for this. Meshwire isn\'t approved.', results)), ['Meshwire']);
+  assert.deepEqual(names(namedProducts('Managed is approved for purchase.', results)), ['Managed Watchtail Threat Detection']);
+});
+
+test('Q3 short name (option B): "Watchtail" finds nothing when more than 1 result starts with "Watchtail"', () => {
+  const results = ['Watchtail Pro', 'Watchtail Enterprise', 'Watchtail Agent'].map(byName);
+  assert.deepEqual(names(namedProducts('Watchtail is approved for purchase.', results)), []);
+  // A full name still matches.
+  assert.deepEqual(names(namedProducts('Watchtail Pro is approved. Watchtail isn\'t a single product.', results)), ['Watchtail Pro']);
+  // With only 1 Watchtail product in this turn's results, "Watchtail" finds it.
+  assert.deepEqual(names(namedProducts('Watchtail is approved.', [byName('Watchtail Pro')])), ['Watchtail Pro']);
 });
 
 test('Q3: a product the text names that is not in this turn\'s results gets no List item', () => {

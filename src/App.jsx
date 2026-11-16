@@ -6,13 +6,14 @@ import SideNavigation from '@cloudscape-design/components/side-navigation';
 import TopNavigation from '@cloudscape-design/components/top-navigation';
 import { BUYERS, experienceFor } from '../shared/catalog.js';
 import { COPY } from '../shared/copy.js';
-import { ROUTES, productIdForRoute } from '../shared/productRoutes.js';
+import { OTHER_CONSOLE_PAGES, ROUTES, discoverRoute, productIdForRoute } from '../shared/productRoutes.js';
 import AssistantDrawer from './drawer/AssistantDrawer.jsx';
 import { followHandler, navigate, useLocation } from './router.js';
 import { useStore } from './state/store.jsx';
 import Discover from './pages/Discover.jsx';
 import MyPrivateMarketplace from './pages/MyPrivateMarketplace.jsx';
 import NotFound from './pages/NotFound.jsx';
+import NotInPrototype from './pages/NotInPrototype.jsx';
 import ProductPage from './pages/ProductPage.jsx';
 import ProductRequests from './pages/ProductRequests.jsx';
 import RequestForm from './pages/RequestForm.jsx';
@@ -22,6 +23,8 @@ export const DRAWER_ID = 'product-request-assistant';
 const NAV_WIDTH = 280; // App layout default navigationWidth
 const DRAWER_WIDTH = 420;
 const MIN_PAGE_WIDTH = 400;
+// Cloudscape mobile breakpoint: below this width, App layout shows the navigation over the page.
+const PHONE_MAX_WIDTH = 688;
 
 // Buyer menu (Q1 option A). Switching clears the conversation.
 function TopNav() {
@@ -50,24 +53,44 @@ function TopNav() {
   );
 }
 
+// Left nav "Private Marketplace" is an expandable link group (Figma frames). Its own link opens
+// My Private Marketplace. It has its own href, so only the page link inside it shows as active.
+const PMP_GROUP_HREF = '/private-marketplace';
+const PRODUCT_PAGE_WIDTH = 1040;
+
+// Breadcrumbs follow the Figma frames: AWS Marketplace > Private Marketplace > page, and
+// AWS Marketplace > category > product on a product page.
+const PMP_CRUMB = { text: 'Private Marketplace', href: PMP_GROUP_HREF };
+
 function pageFor(path) {
-  if (path === ROUTES.myPrivateMarketplace) return { key: 'my-pmp', element: <MyPrivateMarketplace />, crumbs: ['Private Marketplace', 'My Private Marketplace'] };
-  if (path === ROUTES.productRequests) return { key: 'requests', element: <ProductRequests />, crumbs: ['Private Marketplace', COPY.productRequests] };
-  if (path === ROUTES.discover) return { key: 'discover', element: <Discover />, crumbs: [COPY.discoverProducts] };
-  if (path === ROUTES.requestForm) return { key: 'form', element: <RequestForm />, crumbs: ['Private Marketplace', COPY.formTitle] };
+  if (path === ROUTES.myPrivateMarketplace || path === PMP_GROUP_HREF) {
+    return { key: 'my-pmp', element: <MyPrivateMarketplace />, crumbs: [PMP_CRUMB, { text: 'My Private Marketplace' }] };
+  }
+  if (path === ROUTES.productRequests) return { key: 'requests', element: <ProductRequests />, crumbs: [PMP_CRUMB, { text: COPY.productRequests }] };
+  if (path === ROUTES.discover) return { key: 'discover', element: <Discover />, crumbs: [{ text: COPY.discoverProducts }] };
+  if (path === ROUTES.requestForm) return { key: 'form', element: <RequestForm />, crumbs: [PMP_CRUMB, { text: COPY.formTitle }] };
+  const other = OTHER_CONSOLE_PAGES.find((item) => item.href === path);
+  if (other) return { key: other.href, element: <NotInPrototype title={other.text} />, crumbs: [{ text: other.text }] };
   const productId = productIdForRoute(path);
   if (productId) {
-    return { key: `product-${productId}`, element: <ProductPage productId={productId} />, crumbs: [COPY.discoverProducts, findProduct(productId).name] };
+    const product = findProduct(productId);
+    return {
+      key: `product-${productId}`,
+      element: <ProductPage productId={productId} />,
+      crumbs: [{ text: product.category, href: discoverRoute({ category: product.category }) }, { text: product.name }],
+      // The product page frames center the content in a 1040px column.
+      maxContentWidth: PRODUCT_PAGE_WIDTH,
+    };
   }
-  return { key: 'not-found', element: <NotFound />, crumbs: ['Page not found'] };
+  return { key: 'not-found', element: <NotFound />, crumbs: [{ text: 'Page not found' }] };
 }
 
-const CRUMB_HREFS = {
-  'Private Marketplace': ROUTES.myPrivateMarketplace,
-  'My Private Marketplace': ROUTES.myPrivateMarketplace,
-  [COPY.productRequests]: ROUTES.productRequests,
-  [COPY.discoverProducts]: ROUTES.discover,
-};
+function activeNavHref(path) {
+  if (path.startsWith('/products/')) return ROUTES.discover;
+  if (path === PMP_GROUP_HREF) return ROUTES.myPrivateMarketplace;
+  if (path === ROUTES.requestForm) return ROUTES.productRequests;
+  return path;
+}
 
 export default function App() {
   const { path, href } = useLocation();
@@ -79,32 +102,42 @@ export default function App() {
   // When the drawer opens and the page would have less than 400px left between the side navigation
   // (280px) and the drawer (420px), close the side navigation (App layout navigationOpen). On phones,
   // closeNavigationIfNecessary does it. The buyer can open the navigation again at any time.
+  // When the drawer closes, the side navigation opens again if it was open before the drawer closed it
+  // (design review, Lisa's answer Nov 16). Not on phones, where the navigation covers the page.
+  const navOpenBeforeDrawer = useRef(false);
+  const navigationOpenRef = useRef(navigationOpen);
+  navigationOpenRef.current = navigationOpen;
   useEffect(() => {
-    if (!drawerOpen) return;
-    layoutRef.current?.closeNavigationIfNecessary();
-    if (window.innerWidth < NAV_WIDTH + DRAWER_WIDTH + MIN_PAGE_WIDTH) setNavigationOpen(false);
+    if (drawerOpen) {
+      navOpenBeforeDrawer.current = navigationOpenRef.current;
+      layoutRef.current?.closeNavigationIfNecessary();
+      if (window.innerWidth < NAV_WIDTH + DRAWER_WIDTH + MIN_PAGE_WIDTH) setNavigationOpen(false);
+      return;
+    }
+    if (navOpenBeforeDrawer.current && window.innerWidth >= PHONE_MAX_WIDTH) setNavigationOpen(true);
+    navOpenBeforeDrawer.current = false;
   }, [drawerOpen]);
 
   // Sam variant: Product requests is hidden in the left nav (decided Nov 13), unless the buyer sent
   // requests before requests were turned off.
   const showRequestsPage = experience.requests_enabled || myRequests.length > 0;
+  const pmpPages = [
+    { type: 'link', text: 'My Private Marketplace', href: ROUTES.myPrivateMarketplace },
+    ...(showRequestsPage ? [{ type: 'link', text: COPY.productRequests, href: ROUTES.productRequests }] : []),
+  ];
+  const inPmp = pmpPages.some((item) => item.href === activeNavHref(path));
+  // Items, order and component from the Figma frames (Side navigation PMP buyer).
   const navItems = [
     { type: 'link', text: COPY.discoverProducts, href: ROUTES.discover },
-    {
-      type: 'section-group',
-      title: 'Private Marketplace',
-      items: [
-        { type: 'link', text: 'My Private Marketplace', href: ROUTES.myPrivateMarketplace },
-        ...(showRequestsPage ? [{ type: 'link', text: COPY.productRequests, href: ROUTES.productRequests }] : []),
-      ],
-    },
+    ...OTHER_CONSOLE_PAGES.slice(0, 4).map((item) => ({ type: 'link', ...item })),
+    { type: 'expandable-link-group', text: 'Private Marketplace', href: PMP_GROUP_HREF, defaultExpanded: inPmp, items: pmpPages },
+    { type: 'link', ...OTHER_CONSOLE_PAGES[4] },
   ];
-  const activeHref = path.startsWith('/products/') ? ROUTES.discover : path;
 
-  const crumbs = [{ text: 'AWS Marketplace', href: ROUTES.discover }, ...page.crumbs.map((text, i) => ({
-    text,
-    href: i === page.crumbs.length - 1 ? '#' : CRUMB_HREFS[text] ?? ROUTES.myPrivateMarketplace,
-  }))];
+  const crumbs = [
+    { text: 'AWS Marketplace', href: ROUTES.discover },
+    ...page.crumbs.map((crumb, i) => ({ text: crumb.text, href: i === page.crumbs.length - 1 ? '#' : crumb.href })),
+  ];
 
   return (
     <>
@@ -115,10 +148,11 @@ export default function App() {
         navigationOpen={navigationOpen}
         onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
         toolsHide
+        maxContentWidth={page.maxContentWidth}
         navigation={
           <SideNavigation
             header={{ text: 'AWS Marketplace', href: ROUTES.discover }}
-            activeHref={activeHref}
+            activeHref={activeNavHref(path)}
             items={navItems}
             onFollow={followHandler}
           />

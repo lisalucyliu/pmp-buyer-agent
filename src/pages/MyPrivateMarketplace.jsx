@@ -9,6 +9,7 @@ import StatusIndicator from '@cloudscape-design/components/status-indicator';
 import { COPY } from '../../shared/copy.js';
 import { discoverRoute } from '../../shared/productRoutes.js';
 import ApprovedBadge from '../components/ApprovedBadge.jsx';
+import GenAiButton from '../components/GenAiButton.jsx';
 import { followHandler } from '../router.js';
 import { useStore } from '../state/store.jsx';
 
@@ -26,9 +27,7 @@ export default function MyPrivateMarketplace() {
             <SpaceBetween direction="horizontal" size="xs">
               {/* Hidden for Sam (decided Nov 14). The trigger bar icon still opens the drawer. */}
               {requestsOn && (
-                <Button iconName="gen-ai" onClick={() => openDrawer('request')}>
-                  {COPY.requestProduct}
-                </Button>
+                <GenAiButton onClick={() => openDrawer('request')}>{COPY.requestProduct}</GenAiButton>
               )}
               <Button variant="primary" href={discoverRoute({ approvedOnly: true })} onFollow={followHandler}>
                 {COPY.explorePmp}
@@ -52,11 +51,16 @@ export default function MyPrivateMarketplace() {
           </SpaceBetween>
         </Container>
 
-        <ExpandableSection variant="container" headerText="What is Private Marketplace?">
+        <ExpandableSection variant="container" defaultExpanded headerText="What is Private Marketplace?">
+          {/* Text word for word from Lisa's wireframe, the version approved for launch (Lisa's answer, Nov 16,
+              item 8). It may differ from the live site today. */}
           <Box variant="p">
-            Private Marketplace controls which AWS Marketplace products your organization can buy. Your
-            administrators choose the approved products. You can find and buy them here, knowing that they
-            meet your organization&apos;s policies.
+            Private Marketplace is a new feature that makes it simple to control which AWS Marketplace products
+            developers can procure. Built on top of AWS Marketplace, Private Marketplace enables administrators to
+            create and customize a curated digital catalog of approved independent software vendor (ISV) products
+            that conform to their in-house policies. Business users and engineering teams can now find, buy, and
+            deploy products from AWS Marketplace in their custom Private Marketplace, knowing that all available
+            products comply with their organization&apos;s policies and standards.
           </Box>
         </ExpandableSection>
 

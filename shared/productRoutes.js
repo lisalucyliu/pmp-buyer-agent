@@ -9,6 +9,16 @@ export const ROUTES = {
   requestForm: '/request-form',
 };
 
+// Left nav items from Lisa's Figma frames that are not part of the prototype. Each one opens a short
+// "not part of this prototype" page, so no link is dead.
+export const OTHER_CONSOLE_PAGES = [
+  { text: 'Procurement insights', href: '/procurement-insights' },
+  { text: 'Manage subscriptions', href: '/manage-subscriptions' },
+  { text: 'Private offers', href: '/private-offers' },
+  { text: 'Vendor insights', href: '/vendor-insights' },
+  { text: 'Settings', href: '/settings' },
+];
+
 export function productRoute(productId) {
   const route = routes[productId];
   if (!route) throw new Error(`No product route for ${productId}`);

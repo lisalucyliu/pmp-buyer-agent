@@ -89,7 +89,8 @@ test.describe('Frames 6 and 7', () => {
     await expect(dialog).toHaveCount(0);
     await expect(items(page)).toHaveCount(4);
     await expect(items(page).locator('a')).toHaveText([
-      'Meshwire', 'Tunnelport Access Server (BYOL)', 'Bastion NGFW VM', 'Shalecrest UTM 9',
+      // Q4 (option B): approved for Riley first, then catalog order.
+      'Tunnelport Access Server (BYOL)', 'Meshwire', 'Bastion NGFW VM', 'Shalecrest UTM 9',
     ]);
   });
 

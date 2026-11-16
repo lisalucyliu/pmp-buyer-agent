@@ -154,3 +154,39 @@ Questions:
 - Q10 (GIFs, real Claude or fake agent): decide at step 4.
 - Top-level Error boundary around the whole app with the default fallback: yes (Cloudscape Error boundary guideline).
 - Step 2 paid requests: keep run A (about 12). Run B becomes smaller: only the frames where Claude's wording is the subject of the test, P1 and P2 ("I can't buy products for you." first), P3 (price), P5 (simple questions), 5d (too-big request), H3 (questions the agent can't answer) and 1 Sam requests-off turn. About 14. Free tests and the Week 7 evals cover the other frames. Change section 5 of docs/build-plan.md to say this. New total: about 32 paid requests (about 26 in step 2, 3 in step 3, 3 in step 4), or more with real GIFs.
+
+## Lisa's answers (Nov 16, step 1 report)
+
+- Q3 (List items, short names): B. Also match a short name when exactly 1 product in this turn's results starts with that word. "Tunnelport" finds Tunnelport Access Server (BYOL). "Watchtail" matches more than 1 product, so it finds nothing. Change the Q3 short-name test, and add a test for the "Watchtail" case.
+- Q4 (order inside a frame 7 choice result): B. Products approved for this buyer first, then catalog order. Add tests for Riley and Sam.
+- Badge color #3759ce is correct. Keep calling it purple (blue could be mistaken for AWS blue). Make docs/deviations.md D1 say "purple" only.
+
+## Lisa's answers (Nov 16, step 1 fixes report)
+
+1. Keep out: Request demo, free trial, cost tables, Region select, Get support, and "Sold by" for Meshwire. The spec wins.
+2. Keep out: Info links, "Show more" under the header description, and the refresh and preferences buttons on Product requests. Each would be a control that does nothing.
+3. Product page tabs: keep the tabs that jump to sections, as in the frame and the live AWS Marketplace product page. Make the active tab follow the scroll. Log it in docs/deviations.md as D5: Cloudscape Tabs are not for jumping to sections on one page (Anchor navigation is). Source: Lisa's frame and the live AWS Marketplace product page. Approved by Lisa Nov 16. Add a free test that the active tab changes when the page scrolls to a section.
+4. Product requests: keep "Find requests" and pagination, as in the frame.
+5. Gradient fill on the primary "Request product" (Product requests): make the gradient darker until the white text is at least 4.5:1 at every point of the gradient, in the default, hover and active states. Keep the same hue direction (blue to purple). Update D4 with the new values.
+6. Breadcrumb: keep it without the delivery method crumb.
+7. Left nav items outside the prototype: keep the "not part of the prototype" page.
+8. "What is Private Marketplace?": replace the text with this text, word for word. It comes from Lisa's wireframe, from the version approved for launch. She can't confirm it matches the live site today.
+
+   "Private Marketplace is a new feature that makes it simple to control which AWS Marketplace products developers can procure. Built on top of AWS Marketplace, Private Marketplace enables administrators to create and customize a curated digital catalog of approved independent software vendor (ISV) products that conform to their in-house policies. Business users and engineering teams can now find, buy, and deploy products from AWS Marketplace in their custom Private Marketplace, knowing that all available products comply with their organization's policies and standards."
+
+9. Q3 short names: a short name matches only when it starts with a capital letter in Claude's text, and exactly 1 product in this turn's results starts with that word. Free tests: "Tunnelport" matches, "a managed service" doesn't.
+
+Questions from the round 2 report:
+
+- Sticky tab row: yes. Build it and add it to D5 (source: the live AWS Marketplace product page keeps its tab row in view).
+- "Find requests" and pagination with 2 rows: yes, log it as D6 (Cloudscape Table: only use filtering, pagination and sorting if there are more than 5 items. Source: Lisa's frame and the live console).
+
+Design review suggestions:
+
+- Header count: when the filter finds nothing, show the total, not (0).
+- "Cancel request" cut off on tablet and phone widths: fix it.
+- Side nav doesn't open again after the drawer closes: fix it, with a free test.
+- Details: keep Cloudscape Key value pairs (labels on top). No change.
+- Heading levels: 1 h1 per page and no skipped levels. Report the final structure for each page.
+
+README: add "Differences from the live AWS Marketplace console", with a link to docs/deviations.md. Keep the "View purchase options" note.

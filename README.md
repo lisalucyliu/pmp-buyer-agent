@@ -59,9 +59,28 @@ Playwright 1.65 needs its own browser. To download it once: `npx playwright inst
 ## Known limits
 
 - Requests live in the browser session only. A page reload removes new requests from Product requests. The 2 sample rows stay. (Decision 79. Supabase comes later.)
-- Every product page uses "View purchase options" as its primary button. On the real site, a few listings that these products are based on have only "Request private offer", for example the listing behind Talonix Platform. "View purchase options" doesn't open a page in this prototype.
-- E3 (drawer fails to load) doesn't tell the buyer to contact anyone. The real console would tell the buyer to contact AWS Support. This prototype doesn't, because it is a prototype (decision 101).
+- Product page buttons, placeholders and other differences from the live console: see "Differences from the live AWS Marketplace console".
+- Pages follow Lisa's Figma frames for layout (see docs/figma-round-trip.md).
 - Contact details: code finds an email address and a "#" Slack channel in the branding description. It misses formats it doesn't know, such as a phone number.
+
+## Differences from the live AWS Marketplace console
+
+The prototype looks or works differently from the live console or Lisa's wireframes in these places. Approved Cloudscape deviations are logged in [docs/deviations.md](docs/deviations.md).
+
+- **Gen-ai gradient on the entry point buttons (D4):** "Request product" and "Request approval" use the AWS gen-ai gradient from Lisa's wireframes, because public Cloudscape code has no gen-ai gradient and only adds the gen-ai icon.
+- **Darker gradient on the primary "Request product" (Product requests, D4):** the fill is darker than in the wireframe, because white text on the wireframe gradient failed WCAG AA contrast.
+- **Purple "Approved for purchase" badge (D1):** it uses purple (#3759ce) from the console badge in Lisa's earlier Private Marketplace prototype, because Cloudscape Badge has no purple color (decision 33).
+- **Tabs that jump to sections, and a sticky tab row (D5):** the product page tabs scroll to sections on the same page and stay in view, as on the live product page, because the wireframe and the live page work this way (Cloudscape Tabs are not for this).
+- **"Find requests" and pagination on a short table (D6):** Product requests has a filter and pagination with only 2 rows, because the wireframe and the live console have them.
+- **Placeholder content on the product page:** the logo, video, overview, highlights, some details, pricing, legal, usage, resources and support show text in square brackets, because the catalog has only the name, vendor, category, delivery method and a short description.
+- **Buttons and price sections left out:** the product page has no "Request demo", "Try for free" or "Get support" button, no free trial, no Region select and no cost tables, because the spec allows no other buttons, the prototype shows no prices (decision 107) and these controls would do nothing.
+- **Info links and other controls left out:** there are no "Info" links, no "Show more" under the product description, and no refresh or preferences button on Product requests, because each would be a control that does nothing.
+- **Shorter breadcrumb on product pages:** it shows AWS Marketplace > category > product, without the delivery method, because the prototype has no page for a delivery method.
+- **"Not part of the prototype" pages:** Procurement insights, Manage subscriptions, Private offers, Vendor insights and Settings open a page that says so, because the prototype doesn't build them.
+- **"What is Private Marketplace?" text:** it comes word for word from Lisa's wireframe, from the version approved for launch, so it may differ from the live site today.
+- **"View purchase options":** every product page uses it as the primary button. On the real site, a few listings that these products are based on have only "Request private offer", for example the listing behind Talonix Platform. "View purchase options" doesn't open a page in this prototype.
+- **No contact line when the drawer fails to load (D3):** the real console would tell the buyer to contact AWS Support, but this prototype doesn't, because it is a prototype (decision 101).
+- **Drawer title "Product request assistant" (D2):** Cloudscape uses "generative AI assistant", but this assistant does only product requests.
 
 ## What comes from code, not from Claude
 

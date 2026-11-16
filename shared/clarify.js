@@ -3,9 +3,10 @@
 // - Any other search: up to 4 choices made from the categories of the matches,
 //   most matches first, then catalog order.
 // A choice shows ALL products in its categories, not only the ones that matched the search text.
-// Order of a choice result: catalog order. Lisa has not decided the final order yet (Q4).
+// Order of a choice result (Q4, option B, Lisa's answers to the step 1 report): products approved for
+// this buyer first, then the rest. Catalog order inside each group.
 import fixedChoices from '../data/clarifyChoices.json' with { type: 'json' };
-import { PRODUCTS } from './catalog.js';
+import { PRODUCTS, isApproved } from './catalog.js';
 import { normalize } from './search.js';
 
 export const MAX_CHOICES = 4;
@@ -23,6 +24,12 @@ export function clarifyChoices(query, matches, products = PRODUCTS) {
     .map((category) => ({ label: category, categories: [category] }));
 }
 
-export function productsForChoice(choice, products = PRODUCTS) {
-  return products.filter((product) => choice.categories.includes(product.category));
+// experienceId: the buyer's Private Marketplace experience. Without it, the result is in catalog order.
+export function productsForChoice(choice, experienceId = null, products = PRODUCTS) {
+  const inChoice = products.filter((product) => choice.categories.includes(product.category));
+  if (!experienceId) return inChoice;
+  return [
+    ...inChoice.filter((product) => isApproved(product, experienceId)),
+    ...inChoice.filter((product) => !isApproved(product, experienceId)),
+  ];
 }
