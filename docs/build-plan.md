@@ -233,7 +233,7 @@ Some rules depend on what Claude writes (for example "I can't buy products for y
 - Port the 3 tools and the prompt with the section 3 changes. Show you each before and after.
 - Free tests with a fake Claude client first.
 - Paid smoke run A, about 12 paid requests: frames 6 (VPN), 9 (alternatives), 11 (card), 17 (Sam, requests off), 23 (just buy it). I ask first.
-- Paid run B, about 30 paid requests: the other frames (7, 10, 13, 18, 19, 20, 24, 25, 26, 27a to 27d), Riley and Sam where the spec has a variant. I ask first.
+- Paid run B, about 14 paid requests (changed Nov 16, Lisa's answers in proposals.md): only the frames where Claude's wording is the subject of the test. P1 and P2 ("I can't buy products for you." first), P3 (price), P5 (simple questions), 5d (too-big request), H3 (questions the agent can't answer) and 1 Sam requests-off turn. Free tests and the Week 7 evals cover the other frames. I ask first.
 - Fix and recheck only the frames that fail, each with your OK and a count.
 
 ### Step 3: error states (row 6) and Vercel deploy
@@ -248,6 +248,6 @@ Some rules depend on what Claude writes (for example "I can't buy products for y
 - Motion: 0 paid requests. First to go to the parking lot if time runs out.
 - GIFs: 0 paid requests with the fake agent, or about 12 with real Claude (proposals.md question 10).
 
-**Total: about 48 paid requests, or about 60 with real GIFs.** I will compare the first run's usage in the Claude Console with your $10 limit before run B.
+**Total: about 32 paid requests (about 26 in step 2, 3 in step 3, 3 in step 4), or more with real GIFs (decided at step 4).** I will compare the first run's usage in the Claude Console with your $10 limit before run B.
 
 Hard end: Wed Nov 18. Cut order: motion, then Supabase.

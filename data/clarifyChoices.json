@@ -1,0 +1,32 @@
+{
+  "_comment": "Fixed frame 7 choices for a search text, in the order the dialog shows them. Lisa's answers Nov 16, Q4. A choice shows all products in its categories.",
+  "security": [
+    {
+      "label": "Threat detection and response",
+      "categories": [
+        "Threat detection and response",
+        "Managed threat detection service",
+        "Incident response service"
+      ]
+    },
+    {
+      "label": "Firewall and VPN",
+      "categories": [
+        "Network firewall",
+        "Remote network access (VPN)"
+      ]
+    },
+    {
+      "label": "Compliance automation",
+      "categories": [
+        "Compliance automation"
+      ]
+    },
+    {
+      "label": "Server and workload protection",
+      "categories": [
+        "Server and workload protection"
+      ]
+    }
+  ]
+}

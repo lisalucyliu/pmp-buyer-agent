@@ -1,0 +1,86 @@
+{
+ "vpn": [
+  "Meshwire",
+  "Tunnelport Access Server (BYOL)",
+  "Shalecrest UTM 9"
+ ],
+ "security": [
+  "Watchtail Enterprise",
+  "Watchtail Pro",
+  "Managed Watchtail Threat Detection",
+  "Ironveil Horizon",
+  "Auditlane",
+  "Holdfast Incident Response Retainer",
+  "Breachkit Linux",
+  "Ironveil Workload Security",
+  "Shalecrest UTM 9"
+ ],
+ "meshwire": [
+  "Meshwire"
+ ],
+ "tunnelport access server": [
+  "Tunnelport Access Server (BYOL)"
+ ],
+ "watchtail pro": [
+  "Watchtail Pro"
+ ],
+ "watchtail": [
+  "Watchtail Enterprise",
+  "Watchtail Pro",
+  "Watchtail Agent",
+  "Watchtail Operator",
+  "Managed Watchtail Threat Detection"
+ ],
+ "zentrova": [],
+ "lumora image large": [
+  "Lumora Image Large"
+ ],
+ "auditlane": [
+  "Auditlane"
+ ],
+ "watchtial": [
+  "Watchtail Enterprise",
+  "Watchtail Pro",
+  "Watchtail Agent",
+  "Watchtail Operator",
+  "Managed Watchtail Threat Detection"
+ ],
+ "secuirty": [
+  "Watchtail Enterprise",
+  "Watchtail Pro",
+  "Managed Watchtail Threat Detection",
+  "Ironveil Horizon",
+  "Auditlane",
+  "Holdfast Incident Response Retainer",
+  "Breachkit Linux",
+  "Ironveil Workload Security",
+  "Shalecrest UTM 9"
+ ],
+ "linux": [
+  "Cardinal Enterprise Linux for SAP",
+  "Larkspur Linux 22.04 LTS",
+  "Breachkit Linux",
+  "Cardinal Enterprise Linux 9"
+ ],
+ "firewall": [
+  "Bastion NGFW VM",
+  "Shalecrest UTM 9"
+ ],
+ "monitoring": [
+  "Watchtail Enterprise",
+  "Watchtail Pro",
+  "Watchtail Agent"
+ ],
+ "database": [
+  "Watchtail Enterprise",
+  "Watchtail Pro",
+  "QuarryDB Cloud (pay-as-you-go)"
+ ],
+ "cardinal": [
+  "Cardinal Enterprise Linux for SAP",
+  "Cardinal Enterprise Linux 9"
+ ],
+ "threat detection": [
+  "Managed Watchtail Threat Detection"
+ ]
+}

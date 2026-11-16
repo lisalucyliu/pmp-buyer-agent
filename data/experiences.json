@@ -1,0 +1,16 @@
+[
+  {
+    "id": "Engineering",
+    "experience_name": "Engineering",
+    "branding_name": "Initech Engineering Marketplace",
+    "branding_description": "Software approved for Initech engineering teams. Questions about a product or a request? Email eng-software@initech.example or post in #eng-software-requests on Slack.",
+    "requests_enabled": true
+  },
+  {
+    "id": "Finance",
+    "experience_name": "Finance",
+    "branding_name": "Initech Finance Marketplace",
+    "branding_description": "Software approved for the Initech finance team.",
+    "requests_enabled": false
+  }
+]

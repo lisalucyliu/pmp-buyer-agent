@@ -120,3 +120,37 @@ Smaller notes (no answer needed unless you disagree):
 - I will not add `category` to the text that search matches against, so the spec counts stay true ("VPN" 3, "security" 9).
 - The spec frame 6 order was a placeholder. With the ranking rule, it stays Meshwire, Tunnelport Access Server (BYOL), Shalecrest UTM 9.
 - The new repo needs a CLAUDE.md with its design mode. I will write "System (Cloudscape)" in step 1, the same as pmp-tiny-agent.
+
+## Lisa's answers (Nov 16)
+
+Categories: approved as proposed, with 2 changes.
+
+- Watchtail Agent: "Monitoring agent for EC2". Watchtail Operator: "Monitoring agent for Kubernetes". (2 categories. An EC2 image can't replace a Kubernetes install, so they aren't alternatives for each other.)
+- Paneway Server 2022 Base: "Server operating system" (buyers see category names in the reason line and the step line).
+
+Sample rows: approved. QuarryDB Cloud (pay-as-you-go) Pending, Nov 10, 2026, 10:42. Bastion NGFW VM Declined, Oct 27, 2026, 15:08.
+
+Questions:
+
+- Q1 (Riley or Sam switch): A, a buyer menu in the top navigation. Switching clears the conversation. Also B, a ?buyer= URL parameter, for tests.
+- Q2 (how Claude gets alternatives): A, alternatives_for (a product ID) on search_products. Still 3 tools. Step 2 builds it. Step 1 only needs shared/alternatives.js.
+- Q3 (which products get a List item): A, code finds product names in Claude's final text, only among this turn's tool results. Add a free test where the text uses a short name, for example "Tunnelport" for Tunnelport Access Server (BYOL), and tell me what code does with it.
+- Q4 (frame 7, more than 5 matches, choices): C plus A.
+  - For the search text "security", the dialog shows the 4 spec choices in this order. Each choice maps to categories:
+    - "Threat detection and response": Threat detection and response, Managed threat detection service, Incident response service
+    - "Firewall and VPN": Network firewall, Remote network access (VPN)
+    - "Compliance automation": Compliance automation
+    - "Server and workload protection": Server and workload protection
+  - Keep this mapping as data (for example data/clarifyChoices.json), not in component code.
+  - For any other search with more than 5 matches: option A. Code makes up to 4 choices from the categories of the matches (most matches first, then catalog order).
+  - A choice shows ALL products in the chosen categories, not only the products that matched the search text. Example: "Firewall and VPN" shows Bastion NGFW VM, Meshwire, Tunnelport Access Server (BYOL) and Shalecrest UTM 9. "Threat detection and response" includes Talonix Platform.
+  - The order of products in a choice result: there is no search text to rank by. Propose an order in your report. Do not decide a new rule without asking. The fake agent can use catalog order until I answer.
+  - If a choice result has more than 5 products: tell me. Do not add a rule for it.
+- Q5 (note and PO ask, "Here's the request I'll send to your administrator."): A, both fixed in code (shared/copy.js).
+- Q6 (when a "Request <product>" support prompt shows): A, only when exactly 1 product in the answer can be requested.
+- Q7 (E3 (drawer fails to load) test): C, both forceError and a dev-only switch that throws inside the drawer. The switch is never in the Vercel build and has no visible control.
+- Q8 (typo matches, vendor tier): A, typo-only matches go last (tier 5). Vendor tier is "vendor name contains the search text".
+- Q9 (new request after Declined, Canceled or Expired): A, only Pending blocks a new request. Only D (declined and blocked) blocks all requests.
+- Q10 (GIFs, real Claude or fake agent): decide at step 4.
+- Top-level Error boundary around the whole app with the default fallback: yes (Cloudscape Error boundary guideline).
+- Step 2 paid requests: keep run A (about 12). Run B becomes smaller: only the frames where Claude's wording is the subject of the test, P1 and P2 ("I can't buy products for you." first), P3 (price), P5 (simple questions), 5d (too-big request), H3 (questions the agent can't answer) and 1 Sam requests-off turn. About 14. Free tests and the Week 7 evals cover the other frames. Change section 5 of docs/build-plan.md to say this. New total: about 32 paid requests (about 26 in step 2, 3 in step 3, 3 in step 4), or more with real GIFs.

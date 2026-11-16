@@ -1,0 +1,9 @@
+.env*
+.DS_Store
+node_modules
+.vercel
+dist
+test-results
+playwright-report
+.playwright-cli/
+reviews/
