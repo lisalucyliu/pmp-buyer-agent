@@ -2,23 +2,32 @@
 
 A concept prototype of a product request assistant inside a Private Marketplace buyer console. Inspired by AWS Marketplace's Private Marketplace. Not an AWS product, and not affiliated with or endorsed by Amazon Web Services. All companies, products, people, category names, email addresses and account IDs are fictional.
 
-Status: step 1 of the build. The pages work, and the drawer uses a fake agent. The fake agent never calls Claude. Step 2 adds the real agent.
+Status: step 2 of the build. The server function (`api/agent.js`) runs the real agent with Claude. The fake agent stays for free tests and for `npm run dev:fake`.
 
 ## How to run
 
-In a terminal tab, in the `~/pmp-buyer-agent` folder:
+In a terminal tab, in the `~/pmp-buyer-agent` folder, run `npm install` once. Then use one of these 2 commands:
 
-```
-npm install
-npm run dev
-```
+| Command | The drawer talks to | Cost |
+| --- | --- | --- |
+| `npm run dev` | Real Claude (`api/agent.js` through `dev/apiDevRoute.js`) | Each buyer message is 1 to 4 paid requests. Needs `ANTHROPIC_API_KEY` in `.env.local`. |
+| `npm run dev:fake` | The fake agent (`tests/fakeAgent.js` through `dev/fakeAgentRoute.js`) | Free. Never calls Claude. |
 
 Open the URL it prints (usually http://localhost:5173).
 
 - Buyer: use the menu at the upper right (Riley or Sam). Switching clears the conversation. For a link, add `?buyer=sam`.
-- The fake agent waits about 1.2 seconds for each step, so you can see the loading states. Add `?fakeDelay=0` for no wait.
+- Restart the dev server after a change to `server/`, `shared/`, `data/`, `dev/`, `vite.config.js` or `.env.local`.
+- With no key, `npm run dev` shows the "isn't available" error (E1b) in the drawer and makes no call.
+- `npm run dev:fake` only: the fake agent waits about 1.2 seconds for each step, so you can see the loading states. Add `?fakeDelay=0` for no wait.
 
-### Messages the step 1 fake agent knows
+### Paid runs (runner)
+
+`scripts/run_agent.js` runs scripted conversations (`scripts/conversations/run-a/` and `run-b/`) with the same request builder and tool code as the app, and saves what the buyer sees in `runs/<date>-<label>/`. Card buttons run the browser's code with no Claude call. No retries.
+
+- `npm run run:agent -- --run a --dry-run`: prints each conversation and the paid request count. 0 calls.
+- `npm run run:agent -- --run a --label run-a`: the paid run. Only with Lisa's OK and a count.
+
+### Messages the fake agent knows (`npm run dev:fake`)
 
 | Frame | Message |
 | --- | --- |
@@ -37,9 +46,9 @@ Open the URL it prints (usually http://localhost:5173).
 | 26 | Is Watchtail Pro approved? |
 | 27 | What does Watchtail Pro do? / What's the difference between Watchtail Pro and Watchtail Enterprise? / Does Watchtail Pro support SSO? / Compare all the security tools in a table |
 
-### Error states (dev only)
+### Error states (dev only, `npm run dev:fake`)
 
-Add one of these to the page URL. Every agent call then fails that way.
+Add one of these to the page URL. Every agent call then fails that way. `?devCrash=drawer` also works with `npm run dev`.
 
 - `?fakeError=connection`: connection error
 - `?fakeError=E1a`: the assistant is busy
@@ -51,13 +60,14 @@ Add one of these to the page URL. Every agent call then fails that way.
 
 Free tests. No test calls Claude.
 
-- Unit tests: `npm run test:unit`
-- UI tests: `npm run test:e2e`. Playwright starts its own dev server on port 5174.
+- Unit tests: `npm run test:unit`. The server tests use a fake Claude client (`tests/fakeClaude.js`).
+- UI tests: `npm run test:e2e`. Playwright starts its own dev server on port 5174 with the fake agent (`PMP_FAKE_AGENT=1`) and an empty `ANTHROPIC_API_KEY`. It never reuses a dev server you started. `tests/e2e/free.spec.js` checks that `/api/agent` is the fake agent.
 
 Playwright 1.65 needs its own browser. To download it once: `npx playwright install chromium`. Until then, you can point the tests at a browser that is already installed with `PW_CHROMIUM_PATH=<path to chrome-headless-shell> npm run test:e2e`.
 
 ## Known limits
 
+- Product requests on tablet and phone widths: the fixed Actions column hides the Status column. The column order comes from the frame and the spec, and the demo is for desktop (decision 148).
 - Requests live in the browser session only. A page reload removes new requests from Product requests. The 2 sample rows stay. (Decision 79. Supabase comes later.)
 - Product page buttons, placeholders and other differences from the live console: see "Differences from the live AWS Marketplace console".
 - Pages follow Lisa's Figma frames for layout (see docs/figma-round-trip.md).
@@ -89,6 +99,7 @@ The drawer shows some things under the assistant avatar that code makes, not Cla
 - Step lines (what the agent searched or checked)
 - Product lists and their links
 - The confirm card, and the lines next to it: the note and PO number ask, "Here's the request I'll send to your administrator.", "Got it. I didn't send the request." and the request sent line
+- The hand-off line when product requests are turned off (frame 17) or a product can't be requested (frame 18). With 2 or more such products in one answer, 1 combined line
 - The contact details bubble
 - Every error Alert
 - The support prompts (code decides when they show)

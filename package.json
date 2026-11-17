@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:fake": "PMP_FAKE_AGENT=1 vite",
     "build": "vite build",
     "preview": "vite preview",
     "test:unit": "node --test \"tests/unit/**/*.test.js\"",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "run:agent": "node scripts/run_agent.js"
   },
   "engines": {
     "node": ">=20.19"

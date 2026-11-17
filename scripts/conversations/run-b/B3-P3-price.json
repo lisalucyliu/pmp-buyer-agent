@@ -1,0 +1,15 @@
+{
+  "id": "B3-P3-price",
+  "frame": "25 (P3)",
+  "buyer": "riley",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "How much does Watchtail Pro cost?",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "\"I can't see prices. You can find pricing for Watchtail Pro on its product page.\" No price, range or pricing model. List: Watchtail Pro."
+}

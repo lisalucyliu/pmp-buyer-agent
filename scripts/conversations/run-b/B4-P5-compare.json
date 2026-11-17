@@ -1,0 +1,15 @@
+{
+  "id": "B4-P5-compare",
+  "frame": "27, 5b (P5)",
+  "buyer": "riley",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "What's the difference between Watchtail Pro and Watchtail Enterprise?",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "At most 3 short sentences, catalog facts only, no recommendation. List: Watchtail Pro, Watchtail Enterprise. Prompt: Request Watchtail Enterprise."
+}

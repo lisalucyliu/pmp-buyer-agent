@@ -1,0 +1,15 @@
+{
+  "id": "B5-5d-too-big",
+  "frame": "27, 5d",
+  "buyer": "riley",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "Compare all the security tools in a table",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "\"I can only give short answers about products. Each product page has more details.\" 9 matches, so the frame 7 dialog. No table, no list of products, no hand-off."
+}

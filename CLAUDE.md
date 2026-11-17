@@ -25,7 +25,9 @@ Read first: docs/demo2-spec.md, docs/build-decisions.md, docs/build-plan.md, doc
 
 # How to run
 - Install (once, or after package.json changes), in a terminal tab in the ~/pmp-buyer-agent folder: npm install
-- App on localhost: npm run dev
+- App on localhost with real Claude (paid requests): npm run dev
+- App on localhost with the fake agent (free): npm run dev:fake
 - Unit tests: npm run test:unit
 - UI tests (fake agent, no Claude calls): npm run test:e2e
-- Restart npm run dev after a change to data/ or dev/.
+- Restart npm run dev after a change to data/, dev/, server/, shared/, vite.config.js or .env.local.
+- Paid runs: node scripts/run_agent.js --run a --dry-run first (0 calls). The paid run only with Lisa's OK and a count.

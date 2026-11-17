@@ -1,0 +1,15 @@
+{
+  "id": "A2-frame9-alternatives",
+  "frame": "9",
+  "buyer": "riley",
+  "start": {
+    "requestApproval": "prod-rqccxbpo"
+  },
+  "steps": [
+    {
+      "say": "Show approved alternatives",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "search_products with alternatives_for, no new text search. 1 shared reason line, no reason for each product. List: Tunnelport Access Server (BYOL). Prompt: Request Meshwire."
+}

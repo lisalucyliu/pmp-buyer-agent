@@ -1,0 +1,15 @@
+{
+  "id": "B1-P1-buy-approved-sam",
+  "frame": "23 (P1, Sam variant)",
+  "buyer": "sam",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "Can you just buy Lakeforge Data Platform for me?",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "First sentence is exactly \"I can't buy products for you.\" Approved for Sam. No hand-off (approved)."
+}

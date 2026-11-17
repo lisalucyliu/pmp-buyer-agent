@@ -112,6 +112,20 @@ export const lines = {
   sent: (name) => ({ before: `I sent your request for ${name} to your administrator. You can see its status in `, link: COPY.productRequests, after: '.' }),
   saveFailed: (name) => `Your request for ${name} wasn't sent because of a connection error.`,
 
+  // Hand-off bubbles (Lisa's answers, Nov 16, step 2 part 1 report, Q1). Code writes them, not Claude.
+  // Frame 17 (requests off). Spec text: "... To ask about it, speak with your administrator." Only Sam
+  // has requests off today, and Finance has no contact details, so the "contact" ending is never used yet.
+  handOffRequestsOff: (name, hasContacts) =>
+    `Product requests are turned off in your Private Marketplace, so I can't send a request for ${name}. To ask about it, ${hasContacts ? 'contact' : 'speak with'} your administrator.`,
+  // Frame 18 (product can't be requested). Spec text: "... To ask about it, contact your administrator."
+  handOffCantRequest: (hasContacts) =>
+    `This product can't be requested. To ask about it, ${hasContacts ? 'contact' : 'speak with'} your administrator.`,
+  // 2 or more products in one answer: 1 combined bubble (Lisa's answers, Nov 16, part 1b report).
+  handOffRequestsOffMany: (hasContacts) =>
+    `Product requests are turned off in your Private Marketplace, so I can't send a request for these products. To ask about them, ${hasContacts ? 'contact' : 'speak with'} your administrator.`,
+  handOffCantRequestMany: (hasContacts) =>
+    `These products can't be requested. To ask about them, ${hasContacts ? 'contact' : 'speak with'} your administrator.`,
+
   // Frame 16 (recheck at submit). The requests-off and D lines end with the hand-off (row 5, decided Nov 15).
   approvedNow: (name) => `${name} is now approved in your Private Marketplace, so I didn't send the request.`,
   requestsOffNotSent: (name, hasContacts) =>
@@ -125,4 +139,10 @@ export const lines = {
   searchDone: (count) => `Searched products. ${count} matched.`,
   alternativesHeader: (name) => `Checked approved products like ${name}`,
   alternativesDone: (category, count) => `Checked approved products in ${category}. ${count} found.`,
+  // Drafts (step 1 guesses). The spec has only the finished step text for alternatives, and no copy
+  // for the result of a frame 7 choice.
+  alternativesLoading: (name) => `Checking approved products like ${name}`,
+  choiceLoading: (label) => `Checking products for "${label}"`,
+  choiceHeader: (label) => `Checked products for "${label}"`,
+  choiceDone: (categories, count) => `Checked products in ${categories}. ${count} found.`,
 };

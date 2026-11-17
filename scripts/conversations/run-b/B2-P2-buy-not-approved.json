@@ -1,0 +1,15 @@
+{
+  "id": "B2-P2-buy-not-approved",
+  "frame": "24 (P2)",
+  "buyer": "riley",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "Just buy Meshwire for me.",
+      "expectedPaidRequests": 3
+    }
+  ],
+  "lookFor": "First sentence \"I can't buy products for you.\" Then Meshwire isn't approved, the shared reason line, List Tunnelport Access Server (BYOL), prompt Request Meshwire. No request offer in the text."
+}

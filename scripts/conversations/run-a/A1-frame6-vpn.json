@@ -1,0 +1,15 @@
+{
+  "id": "A1-frame6-vpn",
+  "frame": "6",
+  "buyer": "riley",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "Do we have a VPN I can use?",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "1 search for VPN. Text names all 3 products with their status, no URL. List: Meshwire, Tunnelport Access Server (BYOL), Shalecrest UTM 9. No request prompt (2 products can be requested)."
+}

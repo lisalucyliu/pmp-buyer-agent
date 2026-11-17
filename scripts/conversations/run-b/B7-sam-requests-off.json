@@ -1,0 +1,15 @@
+{
+  "id": "B7-sam-requests-off",
+  "frame": "26 (P4, Sam variant, frame 17 path)",
+  "buyer": "sam",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "Is Watchtail Pro approved?",
+      "expectedPaidRequests": 3
+    }
+  ],
+  "lookFor": "Watchtail Pro isn't approved for Sam. No approved alternatives. Claude's text stops there. Code adds the frame 17 stacked bubble with \"speak with your administrator.\" No contact bubble, no prompts."
+}

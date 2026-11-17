@@ -190,3 +190,36 @@ Design review suggestions:
 - Heading levels: 1 h1 per page and no skipped levels. Report the final structure for each page.
 
 README: add "Differences from the live AWS Marketplace console", with a link to docs/deviations.md. Keep the "View purchase options" note.
+
+## Lisa's answers (Nov 16, step 2 start)
+
+- Decision 148 approved. On tablet and phone widths, the Status column on Product requests stays hidden behind the fixed Actions column (the column order comes from the frame and the spec, and the demo is for desktop). The "Date requested (UTC-05:00)" header cut at 1024px stays.
+- Paid runs A and B use a runner script (prompt-2.md section 4), not typing on localhost.
+- The fake agent stays for tests. `npm run dev` uses real Claude. Playwright and a new `npm run dev:fake` command use the fake agent.
+
+## Lisa's answers (Nov 16, step 2 part 1 report)
+
+1. Q1 (hand-off bubble): code writes it. For frame 17 (requests off) and frame 18 (product can't be requested), and their variants (frames 9 and 10 Sam variants, frame 24 Sam and D (declined and blocked) variants, frame 25 Sam variant), code adds the hand-off line as its own stacked bubble with the spec text, word for word:
+   - Frame 17: "Product requests are turned off in your Private Marketplace, so I can't send a request for <product name>. To ask about it, speak with your administrator." (Riley never gets this case. If a case needs "contact your administrator", tell Lisa.)
+   - Frame 18: "This product can't be requested. To ask about it, contact your administrator." Then the contact bubble for Riley.
+   Claude's text stops before the hand-off and does not repeat its sentences. Change S10, S11, S16, S20 and T10 to T12 to fit, and show the before and after. If a turn has more than 1 product that needs a hand-off, tell Lisa what code does. Do not decide a new rule.
+2. Q2 (frame 19, a question the agent can't answer): no tool call. Code adds "Contact details: yes" or "Contact details: no" for the buyer's Private Marketplace as an app note to each message. Remove the check_request_settings call from S17, and "asks something you can't help with" from T3. No step line in frame 19. Tell Lisa how code knows to show the contact bubble after Riley's frame 19 line.
+3. Q3 (history): keep the app notes. Run A will show if Claude searches again on a follow-up.
+4. Q4 (frame 7 choice answer): code writes it. No change.
+5. Q5 (U5 test and the T4 card sentence): approved. U5 checks that "ask the buyer to confirm" is gone.
+6. Q6 (refusal fallback): keep it. The runner records which model wrote each answer (from usage.iterations), and summary.md shows a column for it. If a fallback model answered, summary.md says so.
+7. Q7 (runs/ folder): keep the run files in GitHub. Do not add runs/ to .gitignore.
+8. Q8 (empty history entry after "Submit request"): the server-side fix is approved.
+9. Section 5, proposal 1: approved. Remove "unless the buyer asks for more" from S6.
+10. Section 5, proposal 2: approved. Remove "and check_request_settings shows requests are enabled" from the submit_request description (decision 17: submit request goes by the requests line in the search results).
+11. Section 5, proposal 3: approved. Add a rule that Claude doesn't write a request offer in its text, because the app shows the request option (Q6, request support prompt). Keep S18 for when the buyer asks about requests. Show the exact words as "Draft, Lisa to approve".
+12. Section 5, proposal 4 (a short remark before a tool call): no change now. Run A will show if it happens.
+
+## Lisa's answers (Nov 16, part 1b report)
+
+1. More than 1 product needs a hand-off in one answer: code shows 1 combined bubble, not 1 bubble for each product. The List above it already names the products. Copy, word for word:
+   - Frame 17 (requests off), 2 or more products: "Product requests are turned off in your Private Marketplace, so I can't send a request for these products. To ask about them, speak with your administrator."
+   - Frame 18 (can't be requested), 2 or more products: "These products can't be requested. To ask about them, contact your administrator." Then the contact bubble once (Riley only).
+   - 1 product: the spec text, as now.
+   - Use "contact your administrator" in place of "speak with your administrator" when the Private Marketplace has contact details, the same rule as now.
+2. The rule "no hand-off bubble when Claude's text already has a hand-off line" is approved. Keep its test.

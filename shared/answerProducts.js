@@ -1,5 +1,8 @@
 // Which products get a List item after a response, and when a "Request <product>" support prompt shows.
 // Code decides both. Claude doesn't choose them (build plan section 2, step 5).
+import { STATUS, statusFor } from './catalog.js';
+import { hasContacts } from './contacts.js';
+import { lines } from './copy.js';
 import { canRequest } from './requestChecks.js';
 
 function escapeRegExp(text) {
@@ -81,4 +84,36 @@ export function requestPromptProduct({ text, searchResults = [], alternativesSub
   const requestable = inAnswer.filter((product) =>
     canRequest({ productId: product.product_id, buyer, experience, requests, products }));
   return requestable.length === 1 ? requestable[0] : null;
+}
+
+// Products that get a code-written hand-off bubble after Claude's text (Lisa's answers, Nov 16, step 2
+// part 1 report, Q1). The products the answer is about: the asked product of an alternatives check, a
+// product submit_request couldn't send, and the products the text names among this turn's results (Q3).
+//   Requests off: each of them that isn't approved gets the frame 17 line.
+//   Requests on: each D (declined and blocked) product gets the frame 18 line.
+// The bubble text: handOffLine below.
+export function handOffProducts({ text, searchResults = [], alternativesSubject = null, notSent = [], experience }) {
+  const candidates = [];
+  const add = (product) => {
+    if (product && !candidates.some((p) => p.product_id === product.product_id)) candidates.push(product);
+  };
+  add(alternativesSubject);
+  notSent.forEach(add);
+  namedProducts(text, searchResults).forEach(add);
+  return candidates.filter((product) => {
+    const status = statusFor(product, experience.id);
+    if (!experience.requests_enabled) return status !== STATUS.APPROVED;
+    return status === STATUS.DECLINED_BLOCKED;
+  });
+}
+
+// The hand-off bubble text for those products, or null. 1 product: the spec text. 2 or more: 1 combined
+// bubble (Lisa's answers, Nov 16, part 1b report). "contact" when the Private Marketplace has contact details.
+export function handOffLine(products, experience) {
+  if (!products.length) return null;
+  const contactsYes = hasContacts(experience.branding_description);
+  if (!experience.requests_enabled) {
+    return products.length === 1 ? lines.handOffRequestsOff(products[0].name, contactsYes) : lines.handOffRequestsOffMany(contactsYes);
+  }
+  return products.length === 1 ? lines.handOffCantRequest(contactsYes) : lines.handOffCantRequestMany(contactsYes);
 }

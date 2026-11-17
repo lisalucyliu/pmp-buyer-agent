@@ -1,0 +1,15 @@
+{
+  "id": "A5-frame23-buy",
+  "frame": "23 (P1)",
+  "buyer": "riley",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "Can you just buy Tunnelport Access Server for me?",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "First sentence is exactly \"I can't buy products for you.\" Then approved, then View purchase options on its product page. List: Tunnelport Access Server (BYOL). No prompts."
+}

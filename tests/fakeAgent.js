@@ -23,11 +23,12 @@
 //   done       {}
 import { PRODUCTS, experienceFor, findBuyer, findProduct, isApproved, statusFor } from '../shared/catalog.js';
 import { findAlternatives } from '../shared/alternatives.js';
-import { clarifyChoices, productsForChoice } from '../shared/clarify.js';
+import { choiceAnswer } from '../shared/choiceAnswer.js';
+import { clarifyChoices } from '../shared/clarify.js';
 import { findContacts, hasContacts } from '../shared/contacts.js';
 import { COPY, lines } from '../shared/copy.js';
 import { ERROR_TYPE } from '../shared/errorTypes.js';
-import { listForTurn, namedProducts, requestPromptProduct } from '../shared/answerProducts.js';
+import { handOffLine, listForTurn, namedProducts, requestPromptProduct } from '../shared/answerProducts.js';
 import { CHECK, checkRequest } from '../shared/requestChecks.js';
 import { searchProducts } from '../shared/search.js';
 
@@ -97,8 +98,7 @@ class Turn {
 
   checkAlternatives(subject) {
     const id = `step-${(this.stepCount += 1)}`;
-    // Loading text is a draft. The spec has only the finished text.
-    this.emit({ type: 'step', id, status: 'loading', text: `Checking approved products like ${subject.name}` });
+    this.emit({ type: 'step', id, status: 'loading', text: lines.alternativesLoading(subject.name) });
     const result = findAlternatives(subject, this.ctx.experience.id);
     this.emit(
       { type: 'step', id, status: 'success', text: lines.alternativesDone(subject.category, result.total), header: lines.alternativesHeader(subject.name) },
@@ -195,13 +195,13 @@ function notApprovedPath(turn, product, { prefix = '' } = {}) {
   if (!experience.requests_enabled) {
     // Frame 17 (H1). Sam hears this line for a D product too (decision 1).
     turn.stacked(
-      `Product requests are turned off in your Private Marketplace, so I can't send a request for ${product.name}. To ask about it, ${turn.handOffEnding()}`,
+      lines.handOffRequestsOff(product.name, turn.ctx.contactsYes),
       { handOff: true },
     );
     turn.contactBubble();
   } else if (status === 'D') {
     // Frame 18 (H2)
-    turn.stacked(`This product can't be requested. To ask about it, ${turn.handOffEnding()}`, { handOff: true });
+    turn.stacked(lines.handOffCantRequest(turn.ctx.contactsYes), { handOff: true });
     turn.contactBubble();
   } else {
     turn.requestPrompt();
@@ -228,13 +228,13 @@ function submitPath(turn, product, { note = '', poNumber = '' } = {}) {
     return;
   }
   if (check.result === CHECK.REQUESTS_OFF) {
-    turn.say(`Product requests are turned off in your Private Marketplace, so I can't send a request for ${product.name}. To ask about it, ${turn.handOffEnding()}`);
-    turn.handOff = true;
+    turn.say(`${product.name} isn't approved for purchase in your Private Marketplace.`);
+    turn.stacked(lines.handOffRequestsOff(product.name, turn.ctx.contactsYes), { handOff: true });
     turn.contactBubble();
     return;
   }
-  turn.say(`This product can't be requested. To ask about it, ${turn.handOffEnding()}`);
-  turn.handOff = true;
+  turn.say(`${product.name} isn't approved for purchase in your Private Marketplace.`);
+  turn.stacked(lines.handOffCantRequest(turn.ctx.contactsYes), { handOff: true });
   turn.contactBubble();
 }
 
@@ -274,23 +274,14 @@ function noMatchPath(turn, query) {
   turn.emit({ type: 'prompts', alignment: 'horizontal', editable: true, items: [{ id: 'find-approved', text: COPY.promptFindApproved }] });
 }
 
-// Frame 7 answer: a choice shows all products in its categories. Order (Q4, option B): approved for this
-// buyer first, then catalog order.
-// The step line and the text are drafts. The spec has no copy for the result of a choice.
+// Frame 7 answer: the same code as the real server (shared/choiceAnswer.js).
 function choicePath(turn, choice) {
   const id = `step-${(turn.stepCount += 1)}`;
-  const products = productsForChoice(choice, turn.ctx.experience.id);
-  const categories = joinNames(choice.categories);
-  turn.emit({ type: 'step', id, status: 'loading', text: `Checking products for "${choice.label}"` });
-  turn.emit({ type: 'step', id, status: 'success', text: `Checked products in ${categories}. ${products.length} found.`, header: `Checked products for "${choice.label}"` }, turn.ctx.stepDelayMs);
-  turn.searchResults.push(...products);
-  const approved = products.filter((p) => isApproved(p, turn.ctx.experience.id)).map((p) => p.name);
-  const notApproved = products.filter((p) => !isApproved(p, turn.ctx.experience.id)).map((p) => p.name);
-  const count = products.length;
-  const parts = [`${count} ${count === 1 ? 'product' : 'products'} in your Private Marketplace ${count === 1 ? 'is' : 'are'} used for ${lowerFirst(choice.label)}.`];
-  if (approved.length) parts.push(`${joinNames(approved)} ${approved.length === 1 ? 'is' : 'are'} approved for purchase.`);
-  if (notApproved.length) parts.push(`${joinNames(notApproved)} ${notApproved.length === 1 ? "isn't" : "aren't"} approved.`);
-  turn.say(parts.join(' '));
+  const answer = choiceAnswer(choice, turn.ctx.experience.id);
+  turn.emit({ type: 'step', id, status: 'loading', text: answer.stepLoading });
+  turn.emit({ type: 'step', id, status: 'success', text: answer.stepDone, header: answer.stepHeader }, turn.ctx.stepDelayMs);
+  turn.searchResults.push(...answer.products);
+  turn.say(answer.text);
   turn.codeList();
   turn.requestPrompt();
 }
@@ -353,7 +344,7 @@ export function fakeAgentEvents(body, { stepDelayMs = 0, tokenDelayMs = 0 } = {}
     else turn.say(turn.reasonLine(result));
     turn.codeList();
     if (!experience.requests_enabled) {
-      turn.stacked(`Product requests are turned off in your Private Marketplace, so I can't send a request for ${product.name}. To ask about it, ${turn.handOffEnding()}`, { handOff: true });
+      turn.stacked(lines.handOffRequestsOff(product.name, turn.ctx.contactsYes), { handOff: true });
       turn.contactBubble();
     } else {
       turn.requestPrompt();
@@ -453,7 +444,7 @@ export function fakeAgentEvents(body, { stepDelayMs = 0, tokenDelayMs = 0 } = {}
       turn.say(`I can't see prices. You can find pricing for ${product.name} on its product page.${approved ? '' : ` ${product.name} isn't approved for purchase in your Private Marketplace.`}`);
       turn.codeList();
       if (!approved && !experience.requests_enabled) {
-        turn.stacked(`Product requests are turned off in your Private Marketplace, so I can't send a request for ${product.name}. To ask about it, ${turn.handOffEnding()}`, { handOff: true });
+        turn.stacked(lines.handOffRequestsOff(product.name, turn.ctx.contactsYes), { handOff: true });
         turn.contactBubble();
       } else if (!approved) {
         turn.requestPrompt();
@@ -483,10 +474,9 @@ export function fakeAgentEvents(body, { stepDelayMs = 0, tokenDelayMs = 0 } = {}
     }
     turn.codeList();
     if (!experience.requests_enabled && !(aOk && bOk)) {
-      const names = [a, b].filter((p) => !isApproved(p, experience.id));
-      // Draft: the spec has the frame 17 line for one product only.
-      const what = names.length === 1 ? names[0].name : 'them';
-      turn.stacked(`Product requests are turned off in your Private Marketplace, so I can't send a request for ${what}. To ask about ${names.length === 1 ? 'it' : 'them'}, ${turn.handOffEnding()}`, { handOff: true });
+      // The same hand-off bubble as the server: 1 product, the spec text; 2 or more, 1 combined bubble.
+      const notApprovedProducts = [a, b].filter((p) => !isApproved(p, experience.id));
+      turn.stacked(handOffLine(notApprovedProducts, experience), { handOff: true });
       turn.contactBubble();
     } else {
       turn.requestPrompt();

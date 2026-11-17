@@ -1,0 +1,18 @@
+{
+  "id": "A3-frame11-card",
+  "frame": "11, 12, 14",
+  "buyer": "riley",
+  "start": {
+    "requestApproval": "prod-rqccxbpo"
+  },
+  "steps": [
+    {
+      "say": "Need this for the Q1 network migration. PO 4500012345",
+      "expectedPaidRequests": 1
+    },
+    {
+      "card": "submit"
+    }
+  ],
+  "lookFor": "submit_request with the note and PO number, then the card (no text from Claude). Card note and PO filled. Submit: card Submitted, the sent line, record saved with no buyer name."
+}
