@@ -586,6 +586,15 @@ test('run B fix 7 (Lisa, Nov 17): the alternatives line also shows with requests
   assert.doesNotMatch(search(watchtailPro.name, { alternativesShown: true }), /Next, call search_products/);
 });
 
+test('run B fix 9 (Lisa, Nov 17): the frame 7 result gives Claude the question word for word', () => {
+  const experience = EXPERIENCES.find((e) => e.id === riley.experience_id);
+  const text = runTool('search_products', { query: 'security tools' }, { buyer: riley, experience, requests: [], flags: {}, turn: newTurnState() }).text;
+  assert.ok(text.includes('Ask the buyer this question, word for word: "9 products match "security". What do you need it for?" Do not name types of products, and do not add other sentences about the results.'));
+  assert.doesNotMatch(text, /Tell the buyer how many products match/);
+  // The other sentences stay.
+  assert.match(text, /9 products matched "security"\. The app shows the buyer choices to narrow it down, so do not list or name the products\./);
+});
+
 test('run B fix 6 (Lisa, Nov 17): search first for price and too-big questions; alternatives_for wording', () => {
   assert.match(SYSTEM_PROMPT, /You can find pricing for <product name> on its product page\." Search for the product first, so the app can show its product page\./);
   assert.match(SYSTEM_PROMPT, /Each product page has more details\." Search for the products first, so the app can show their product pages or ask the buyer to narrow them down\./);

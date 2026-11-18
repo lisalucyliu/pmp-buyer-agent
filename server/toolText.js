@@ -80,11 +80,13 @@ function searchBody(result, experience) {
     );
   }
   // T1 (decision 19): more than 5 matches. The app asks the buyer to narrow it down (frame 7).
+  // Fix 9 (Lisa, Nov 17), from run-b3 B5: Claude gets the frame 7 question word for word.
   if (result.needsClarify) {
     return (
       `${header}\n${result.total} products matched "${result.query}". The app shows the buyer choices ` +
-      'to narrow it down, so do not list or name the products. Tell the buyer how many products match, ' +
-      'and ask what they need it for.'
+      'to narrow it down, so do not list or name the products. Ask the buyer this question, word for ' +
+      `word: "${result.total} products match "${result.query}". What do you need it for?" Do not name ` +
+      'types of products, and do not add other sentences about the results.'
     );
   }
   return [header, ...result.shown.map((product) => productLine(product, experience))].join('\n');
