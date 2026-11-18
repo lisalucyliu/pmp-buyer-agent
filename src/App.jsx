@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import AppLayout from '@cloudscape-design/components/app-layout';
 import BreadcrumbGroup from '@cloudscape-design/components/breadcrumb-group';
+import Flashbar from '@cloudscape-design/components/flashbar';
 import SideNavigation from '@cloudscape-design/components/side-navigation';
 import TopNavigation from '@cloudscape-design/components/top-navigation';
 import { BUYERS, experienceFor } from '../shared/catalog.js';
-import { COPY } from '../shared/copy.js';
+import { COPY, lines } from '../shared/copy.js';
 import { OTHER_CONSOLE_PAGES, ROUTES, discoverRoute, productIdForRoute } from '../shared/productRoutes.js';
 import AssistantDrawer from './drawer/AssistantDrawer.jsx';
 import { followHandler, navigate, useLocation } from './router.js';
@@ -85,6 +86,27 @@ function pageFor(path) {
   return { key: 'not-found', element: <NotFound />, crumbs: [{ text: 'Page not found' }] };
 }
 
+// Cancel request fails (decision 6 of prompt 2j): an error Flashbar at the top of Product requests, in
+// the App layout notifications slot. Dismissible. ariaRole "alert": it comes after page load and needs
+// the buyer's attention (Flashbar API).
+function CancelErrorFlashbar() {
+  const { cancelError, setCancelError } = useStore();
+  if (!cancelError) return null;
+  return (
+    <Flashbar
+      items={[{
+        id: cancelError.id,
+        type: 'error',
+        content: lines.cancelFailed(findProduct(cancelError.productId).name),
+        dismissible: true,
+        dismissLabel: 'Dismiss message',
+        ariaRole: 'alert',
+        onDismiss: () => setCancelError(null),
+      }]}
+    />
+  );
+}
+
 function activeNavHref(path) {
   if (path.startsWith('/products/')) return ROUTES.discover;
   if (path === PMP_GROUP_HREF) return ROUTES.myPrivateMarketplace;
@@ -148,6 +170,7 @@ export default function App() {
         navigationOpen={navigationOpen}
         onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
         toolsHide
+        notifications={page.key === 'requests' ? <CancelErrorFlashbar /> : undefined}
         maxContentWidth={page.maxContentWidth}
         navigation={
           <SideNavigation

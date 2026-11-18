@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Box from '@cloudscape-design/components/box';
 import Button from '@cloudscape-design/components/button';
 import Header from '@cloudscape-design/components/header';
@@ -20,7 +20,9 @@ const PAGE_SIZE = 10;
 
 // Frame 2. Columns and status decided Nov 14. Default sort: Date requested, newest first.
 export default function ProductRequests() {
-  const { experience, myRequests, cancelRequest, openDrawer } = useStore();
+  const { experience, myRequests, cancelRequest, openDrawer, requestsLoading, setCancelError } = useStore();
+  // The cancel error Flashbar belongs to this page. It goes away when the buyer leaves the page.
+  useEffect(() => () => setCancelError(null), [setCancelError]);
   const [sortingColumn, setSortingColumn] = useState({ sortingField: 'date' });
   const [sortingDescending, setSortingDescending] = useState(true);
   const [filterText, setFilterText] = useState('');
@@ -80,6 +82,8 @@ export default function ProductRequests() {
       items={rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)}
       columnDefinitions={columns}
       trackBy="request_id"
+      loading={requestsLoading}
+      loadingText="Loading requests"
       stickyColumns={{ first: 0, last: 1 }}
       sortingColumn={columns.find((column) => column.sortingField === field)}
       sortingDescending={sortingDescending}

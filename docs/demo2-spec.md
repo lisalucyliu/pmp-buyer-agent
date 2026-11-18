@@ -328,6 +328,7 @@ Code runs the card's checks again when Riley selects "Submit request" (decided N
 ### Build notes for row 4
 
 - **Known limit before Supabase (decided Nov 14):** a submitted request lives only in the browser session. A page reload removes it from Product requests. The README says so until the Supabase row is built. Publishing the repo to GitHub or deploying it to Vercel doesn't need Supabase.
+- **Supabase is built (Nov 18, decisions 1 to 7 of prompt 2j):** requests are saved for each browser through `api/requests.js`. Without the Supabase keys, requests stay in the browser session only.
 - Recheck at submit: same check code as the duplicate check (decision 18), called again when "Submit request" is selected.
 - Step line timing: "Sending your request" shows only when the save really takes 1 second or more. No fake delay (decided Nov 14). When the card resolves, focus goes back to the card heading (decided Nov 14). Recheck: a free automated test changes the data, then submits (decided Nov 14). Sample rows on Product requests: Claude Code picks 2 N (not approved) products other than Meshwire, and you approve them (decided Nov 14).
 - New bubble in a hidden LiveRegion; no auto-scroll when Riley is reading older messages.

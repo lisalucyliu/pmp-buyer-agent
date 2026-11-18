@@ -6,6 +6,10 @@
 //   ?fakeDelay=0         no delay (tests). Default: about 1.2 seconds for each tool step, so you can see
 //                        the loading states (frame 8). Cloudscape shows no loading state under 1 second.
 //   ?fakeError=connection | E1a | E1b | E2   every agent call fails that way (frame 21, E4)
+//
+// /api/requests here always answers "storage off", so `npm run dev:fake` and the tests never reach
+// Supabase, even when the local env file has the Supabase variables (decision 7 of prompt 2j). UI tests
+// that need saved rows replace /api/requests in the browser (page.route in tests/e2e/storage.spec.js).
 import { fakeAgentEvents, fakeErrorEvents } from '../tests/fakeAgent.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,6 +33,12 @@ export default function fakeAgentRoute() {
     name: 'pmp-fake-agent-dev-route',
     apply: 'serve',
     configureServer(server) {
+      server.middlewares.use('/api/requests', (req, res) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(JSON.stringify({ storage: 'off' }));
+      });
       server.middlewares.use('/api/agent', async (req, res) => {
         if (req.method !== 'POST') {
           res.statusCode = 405;

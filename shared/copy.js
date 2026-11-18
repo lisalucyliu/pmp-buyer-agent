@@ -111,6 +111,10 @@ export const lines = {
   duplicate: (name) => ({ before: `You already sent a request for ${name}. View its status in `, link: COPY.productRequests, after: '.' }),
   sent: (name) => ({ before: `I sent your request for ${name} to your administrator. You can see its status in `, link: COPY.productRequests, after: '.' }),
   saveFailed: (name) => `Your request for ${name} wasn't sent because of a connection error.`,
+  // Cancel fails: error Flashbar on Product requests (decision 6 of prompt 2j). Lisa approved Nov 18, from the
+  // Cloudscape Error messages pattern: why first, the current state in the present tense, then the action.
+  // The cancellation is the main action.
+  cancelFailed: (name) => `A connection error stopped the cancellation of your request for ${name}. The request is still pending. Try again.`,
 
   // Hand-off bubbles (Lisa's answers, Nov 16, step 2 part 1 report, Q1). Code writes them, not Claude.
   // Frame 17 (requests off). Spec text: "... To ask about it, speak with your administrator." Only Sam

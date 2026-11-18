@@ -65,10 +65,20 @@ Free tests. No test calls Claude.
 
 Playwright 1.65 needs its own browser. To download it once: `npx playwright install chromium`. Until then, you can point the tests at a browser that is already installed with `PW_CHROMIUM_PATH=<path to chrome-headless-shell> npm run test:e2e`.
 
+## Supabase setup
+
+Product requests are saved in a Supabase table. Only the server function `api/requests.js` uses it. The browser never gets a Supabase key or the Supabase URL.
+
+1. Make a Supabase project.
+2. In the Supabase SQL Editor, run `supabase/schema.sql`.
+3. Add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (the secret key that starts with `sb_secret_`) to `.env.local` and to Vercel (Production only).
+4. Add `CRON_SECRET` to Vercel (Production only). The daily keep-awake job (`api/keep-awake.js`) uses it.
+5. Redeploy.
+
 ## Known limits
 
 - Product requests on tablet and phone widths: the fixed Actions column hides the Status column. The column order comes from the frame and the spec, and the demo is for desktop (decision 148).
-- Requests live in the browser session only. A page reload removes new requests from Product requests. The 2 sample rows stay. (Decision 79. Supabase comes later.)
+- Requests are saved in Supabase for each browser. A visitor sees only their own requests, plus the 2 sample rows. Local runs and Vercel Preview links without the Supabase keys keep requests in the browser session only, so a page reload removes new requests there. (Decision 79, prompt 2j.)
 - Product page buttons, placeholders and other differences from the live console: see "Differences from the live AWS Marketplace console".
 - Pages follow Lisa's Figma frames for layout (see docs/figma-round-trip.md).
 - Contact details: code finds an email address and a "#" Slack channel in the branding description. It misses formats it doesn't know, such as a phone number.
@@ -91,6 +101,7 @@ The prototype looks or works differently from the live console or Lisa's wirefra
 - **"View purchase options":** every product page uses it as the primary button. On the real site, a few listings that these products are based on have only "Request private offer", for example the listing behind Talonix Platform. "View purchase options" doesn't open a page in this prototype.
 - **No contact line when the drawer fails to load (D3):** the real console would tell the buyer to contact AWS Support, but this prototype doesn't, because it is a prototype (decision 101).
 - **Drawer title "Product request assistant" (D2):** Cloudscape uses "generative AI assistant", but this assistant does only product requests.
+- **Product dropdown on the request form:** the backup request form uses a dropdown to pick a product, because the prototype has only 33 products. The real AWS Marketplace has far too many products for a dropdown, so a real form would need search.
 
 ## What comes from code, not from Claude
 

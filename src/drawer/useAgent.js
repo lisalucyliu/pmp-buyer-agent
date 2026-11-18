@@ -2,10 +2,10 @@
 // and runs the card buttons in the browser (no call to Claude, decision 73).
 import { useCallback, useLayoutEffect, useRef } from 'react';
 import { streamAgent } from '../agentClient.js';
-import { useStore } from '../state/store.jsx';
+import { RequestNotSentError, useStore } from '../state/store.jsx';
 import { COPY } from '../../shared/copy.js';
 import { newId } from '../state/ids.js';
-import { applyEventToConversation, cancelOutcome, requestBody, submitOutcome, turnText } from './conversationLogic.js';
+import { applyEventToConversation, cancelOutcome, notSentBlocks, requestBody, submitOutcome, turnText } from './conversationLogic.js';
 
 // Kept as exports here, because other drawer files import them from this module.
 export { fixedText, turnText } from './conversationLogic.js';
@@ -118,14 +118,17 @@ export function useAgent() {
         steps: [{ ...sendStep, status: 'success', text: COPY.sent }],
         blocks: [{ type: 'fixed', id: newId('b'), key: 'sent', productId }],
       })),
-      () => updateTurn(turnId, (turn) => ({
+      (error) => updateTurn(turnId, (turn) => ({
         ...turn,
         status: 'done',
         steps: [],
-        blocks: [{ type: 'saveError', id: newId('b'), productId, record }],
+        // The server's check did not pass: the same result as the browser's check (frames 13, 16).
+        blocks: error instanceof RequestNotSentError
+          ? notSentBlocks(error.reason, productId, experience)
+          : [{ type: 'saveError', id: newId('b'), productId, record }],
       })),
     );
-  }, [saveRequest, updateTurn]);
+  }, [experience, saveRequest, updateTurn]);
 
   // "Submit request" on the card (frames 12, 14, 16). Recheck at submit with the current data (decision 78).
   const submitCard = useCallback((card) => {

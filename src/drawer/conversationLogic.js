@@ -116,23 +116,29 @@ export function requestBody({ conversation, buyer, requests, message, choice = n
 // Returns what the browser shows next, the note for Claude's history, and the record to save (if any).
 export function submitOutcome({ card, buyer, experience, requests, products }) {
   const result = resolveSubmit({ card, buyer, experience, requests, products });
-  const contacts = findContacts(experience.branding_description);
-  const hasContacts = Boolean(contacts.email || contacts.slack);
   if (result.outcome !== 'not_sent') {
     return { cardState: 'submitted', blocks: [], historyNote: cardNotes.sent, record: result.record };
   }
+  return { cardState: 'not_sent', blocks: notSentBlocks(result.reason, card.productId, experience), historyNote: cardNotes.notSent(result.reason), record: null };
+}
+
+// The blocks for a request that was not sent. The browser check uses them, and so does the save when the
+// server's check does not pass (for example a duplicate the browser did not know about).
+export function notSentBlocks(reason, productId, experience) {
+  const contacts = findContacts(experience.branding_description);
+  const hasContacts = Boolean(contacts.email || contacts.slack);
   const blocks = [];
-  if (result.reason === CHECK.DUPLICATE) blocks.push({ type: 'fixed', id: newId('b'), key: 'duplicate', productId: card.productId });
-  if (result.reason === CHECK.APPROVED) {
-    blocks.push({ type: 'fixed', id: newId('b'), key: 'approvedNow', productId: card.productId });
-    blocks.push({ type: 'list', id: newId('b'), ids: [card.productId] });
+  if (reason === CHECK.DUPLICATE) blocks.push({ type: 'fixed', id: newId('b'), key: 'duplicate', productId });
+  if (reason === CHECK.APPROVED) {
+    blocks.push({ type: 'fixed', id: newId('b'), key: 'approvedNow', productId });
+    blocks.push({ type: 'list', id: newId('b'), ids: [productId] });
   }
-  if (result.reason === CHECK.REQUESTS_OFF || result.reason === CHECK.DECLINED_BLOCKED) {
-    const key = result.reason === CHECK.REQUESTS_OFF ? 'requestsOffNotSent' : 'blockedNotSent';
-    blocks.push({ type: 'fixed', id: newId('b'), key, productId: card.productId, hasContacts });
+  if (reason === CHECK.REQUESTS_OFF || reason === CHECK.DECLINED_BLOCKED) {
+    const key = reason === CHECK.REQUESTS_OFF ? 'requestsOffNotSent' : 'blockedNotSent';
+    blocks.push({ type: 'fixed', id: newId('b'), key, productId, hasContacts });
     if (hasContacts) blocks.push({ type: 'contact', id: newId('b'), ...contacts });
   }
-  return { cardState: 'not_sent', blocks, historyNote: cardNotes.notSent(result.reason), record: null };
+  return blocks;
 }
 
 // "Cancel" on the card (frame 12). No call to Claude.

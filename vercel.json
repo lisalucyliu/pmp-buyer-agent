@@ -5,5 +5,11 @@
     "api/agent.js": {
       "supportsCancellation": true
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/keep-awake",
+      "schedule": "17 9 * * *"
+    }
+  ]
 }

@@ -15,7 +15,7 @@ import { ROUTES } from '../../shared/productRoutes.js';
 import { CHECK } from '../../shared/requestChecks.js';
 import { resolveSubmit } from '../../shared/submitRequest.js';
 import { navigate, useLocation } from '../router.js';
-import { useStore } from '../state/store.jsx';
+import { RequestNotSentError, useStore } from '../state/store.jsx';
 
 // Draft copy for each failed check. The spec has no form error copy yet.
 const FORM_ERRORS = {
@@ -28,7 +28,8 @@ const FORM_ERRORS = {
 
 // Backup request form (decided Nov 13 and 14). A stand-in: we don't know the real form's layout.
 // Fields from the AWS buyer docs: Product (read-only when known), Reason for request, PO number (optional).
-// It runs the same checks as the agent and saves to the same session list.
+// It runs the same checks as the agent and saves the same way (Supabase, or the browser session when
+// storage is off).
 export default function RequestForm() {
   const { params } = useLocation();
   const { buyer, experience, myRequests, saveRequest } = useStore();
@@ -61,7 +62,12 @@ export default function RequestForm() {
     try {
       await saveRequest(result.record);
       navigate(ROUTES.productRequests);
-    } catch {
+    } catch (error) {
+      // The server's check did not pass: the same message as the browser's check.
+      if (error instanceof RequestNotSentError && FORM_ERRORS[error.reason]) {
+        setFormError(FORM_ERRORS[error.reason]);
+        return;
+      }
       setFormError(`Your request for ${result.product.name} wasn't sent because of a connection error. Try again.`);
     }
   };

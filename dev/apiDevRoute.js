@@ -15,10 +15,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // keeps it out of `vite build`, so it never ships.
 const handlerFile = fileURLToPath(new URL('../api/agent.js', import.meta.url));
 
-async function loadHandler() {
+// /api/requests (product requests in Supabase). With no Supabase variables in the local env file, it
+// answers "storage off" and the app keeps requests in the browser session only.
+const requestsFile = fileURLToPath(new URL('../api/requests.js', import.meta.url));
+
+async function loadHandler(file = handlerFile) {
   // Re-import when the file changes, so edits take effect without a restart.
-  const { mtimeMs } = await stat(handlerFile);
-  return import(`${pathToFileURL(handlerFile).href}?t=${mtimeMs}`);
+  const { mtimeMs } = await stat(file);
+  return import(`${pathToFileURL(file).href}?t=${mtimeMs}`);
 }
 
 async function readBody(req) {
@@ -32,6 +36,30 @@ export default function apiDevRoute() {
     name: 'pmp-agent-api-dev-route',
     apply: 'serve',
     configureServer(server) {
+      server.middlewares.use('/api/requests', async (req, res) => {
+        try {
+          const handlers = await loadHandler(requestsFile);
+          const handler = handlers[req.method];
+          if (!handler) {
+            res.statusCode = 405;
+            return res.end();
+          }
+          const request = new Request(`http://localhost${req.originalUrl}`, {
+            method: req.method,
+            headers: req.headers,
+            body: req.method === 'GET' ? undefined : await readBody(req),
+          });
+          const response = await handler(request);
+          res.statusCode = response.status;
+          response.headers.forEach((value, key) => res.setHeader(key, value));
+          res.end(Buffer.from(await response.arrayBuffer()));
+        } catch {
+          console.error('[dev api] /api/requests failed');
+          if (!res.headersSent) res.statusCode = 500;
+          res.end();
+        }
+        return undefined;
+      });
       server.middlewares.use('/api/agent', async (req, res) => {
         const disconnect = new AbortController();
         res.on('close', () => {

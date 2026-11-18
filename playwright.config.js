@@ -5,7 +5,8 @@ import { defineConfig } from '@playwright/test';
 //      (dev/fakeAgentRoute.js). See vite.config.js.
 //   2. reuseExistingServer is false, so Playwright never uses a dev server you started (npm run dev on
 //      5173 uses real Claude). If port 5174 is already in use, the tests stop with an error.
-//   3. ANTHROPIC_API_KEY is set to an empty string for that server, so even the real route would fail.
+//   3. ANTHROPIC_API_KEY, SUPABASE_URL and SUPABASE_SECRET_KEY are set to empty strings for that server,
+//      so even the real routes would fail (Claude) or say storage is off (Supabase).
 //   4. tests/e2e/free.spec.js checks that /api/agent answers with the fake agent.
 export default defineConfig({
   testDir: './tests/e2e',
@@ -21,7 +22,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'npx vite --port 5174 --strictPort',
-    env: { PMP_FAKE_AGENT: '1', ANTHROPIC_API_KEY: '' },
+    env: { PMP_FAKE_AGENT: '1', ANTHROPIC_API_KEY: '', SUPABASE_URL: '', SUPABASE_SECRET_KEY: '' },
     url: 'http://localhost:5174',
     reuseExistingServer: false,
     timeout: 60_000,
