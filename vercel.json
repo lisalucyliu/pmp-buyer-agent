@@ -11,5 +11,11 @@
       "path": "/api/keep-awake",
       "schedule": "17 9 * * *"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ]
 }
