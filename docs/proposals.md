@@ -223,3 +223,16 @@ README: add "Differences from the live AWS Marketplace console", with a link to 
    - 1 product: the spec text, as now.
    - Use "contact your administrator" in place of "speak with your administrator" when the Private Marketplace has contact details, the same rule as now.
 2. The rule "no hand-off bubble when Claude's text already has a hand-off line" is approved. Keep its test.
+
+## Lisa's answers (Nov 17, run A report)
+
+Run A: `runs/2026-11-17-run-a/`. Lisa graded it and approved these changes on Nov 17. Before and after for each change: `docs/prompt-changes.md` section 0b.
+
+1. All "Draft, Lisa to approve" items in `docs/prompt-changes.md` section 4 are approved.
+2. The 3 watch items (Claude, Nov 17, before run A; Lisa approved the prompt as it was and kept them to check in run A): (a) search_products tells Claude to look for alternatives when a product is not approved, so A1 (frame 6, VPN) could make an extra alternatives search. Run A: did not happen. (b) "then offer next steps" in the opening rule could lead to a request offer against S21 (no request offer). Run A: happened in A2 (frame 9), not in A1 or A5. Fixed by fix 2. (c) proposal 4 (short remark before a tool call) is not in the prompt. Run A: did not happen, so it stays out.
+3. Fix 1, S12 (buy for me), from A5 (frame 23): after "I can't buy products for you." and the answer, an approved product ends with "To buy it, choose View purchase options on its product page."
+4. Fix 2, alternatives tool result, from A2 (frame 9): when product requests are enabled, the result ends with "Do not offer a request in your answer. The app shows the Request option." This is for alternatives found and for none found. When requests are turned off, the sentence is not added.
+5. Fix 3, name and status only, from A1, A2, A4, A5: new S6, new S8, and new Agent lines in the S9 and S11 examples. Claude names the products with their approval status and does not describe them, unless the buyer asks what a product does or how products differ. The List shows the vendor and description. S14 does not change.
+6. Option B is chosen over option A. Option A was to keep the descriptions in Claude's text.
+7. Fix 4, search tool result, from the A1 rerun (`runs/2026-11-17-run-a2/`): Claude offered a request for "either of them" after a search, and frame 6 ends with the list. When product requests are enabled, the search result ends with "Do not offer a request in your answer unless the buyer asks about requests. The app handles requests." This is for results, more than 5 matched, and no match. When requests are turned off, the line is not added. The alternatives result (fix 2) does not change.
+8. For fix 4, option A (the line in the search result) is chosen over option B. Option B was to remove "then offer next steps" from the opening rule (S3). S3 does not change.

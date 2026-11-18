@@ -487,3 +487,41 @@ test('items 9, 11 and Q1, Q2 in the system prompt: S6, S10, S16, S17, S20 and th
   // The S11 example now stops before the hand-off.
   assert.doesNotMatch(SYSTEM_PROMPT, /speak with your administrator\./);
 });
+
+test('run A fixes (Lisa, Nov 17): S6, S8, S12 and the alternatives result', () => {
+  assert.match(SYSTEM_PROMPT, /Name only the products that fit the question, with their approval status\. Do not describe them unless the buyer asks what a product does or how products differ/);
+  assert.doesNotMatch(SYSTEM_PROMPT, /in one short line each/);
+  assert.match(SYSTEM_PROMPT, /If the buyer asks how two similar products differ, state the difference in one short phrase/);
+  assert.match(SYSTEM_PROMPT, /If the product is approved, end with "To buy it, choose View purchase options on its product page\."/);
+  assert.doesNotMatch(SYSTEM_PROMPT, /for smaller teams|for large companies/);
+  const noOffer = 'Do not offer a request in your answer. The app shows the Request option.';
+  const alternatives = (buyer, product) => {
+    const experience = EXPERIENCES.find((e) => e.id === buyer.experience_id);
+    return runTool('search_products', { query: product.name, alternatives_for: product.product_id }, { buyer, experience, requests: [], flags: {}, turn: newTurnState() }).text;
+  };
+  // Riley (requests enabled): 1 found and 0 found both end with the line.
+  assert.ok(alternatives(riley, MESHWIRE).endsWith(noOffer));
+  assert.ok(alternatives(riley, byName('Auditlane')).endsWith(noOffer));
+  // Sam (requests off): no Request option, so no line.
+  assert.ok(!alternatives(sam, MESHWIRE).includes(noOffer));
+});
+
+test('run A fix 4 (Lisa, Nov 17): the search result ends with the no-offer line when requests are enabled', () => {
+  const line = 'Do not offer a request in your answer unless the buyer asks about requests. The app handles requests.';
+  const search = (buyer, query) => {
+    const experience = EXPERIENCES.find((e) => e.id === buyer.experience_id);
+    return runTool('search_products', { query }, { buyer, experience, requests: [], flags: {}, turn: newTurnState() }).text;
+  };
+  // Riley (requests enabled): results, more than 5 matched, no match.
+  const vpn = search(riley, 'VPN');
+  assert.match(vpn, /- Meshwire by Meshwire/);
+  assert.ok(vpn.endsWith(`\n${line}`));
+  const security = search(riley, 'security');
+  assert.match(security, /9 products matched "security"/);
+  assert.ok(security.endsWith(`\n${line}`));
+  const none = search(riley, 'Zentrova');
+  assert.match(none, /No products matched "Zentrova"/);
+  assert.ok(none.endsWith(`\n${line}`));
+  // Sam (requests off): no line in any case.
+  for (const query of ['VPN', 'security', 'Zentrova']) assert.ok(!search(sam, query).includes(line));
+});

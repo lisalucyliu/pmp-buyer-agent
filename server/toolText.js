@@ -39,8 +39,18 @@ function productLine(product, experience) {
   );
 }
 
+// Run A fix 4 (Lisa, Nov 17), from the A1 rerun: Claude offered a request after a search. With requests
+// off there is no request to offer, so the line is left out.
+export const SEARCH_NO_REQUEST_OFFER =
+  'Do not offer a request in your answer unless the buyer asks about requests. The app handles requests.';
+
 // search_products, text search. result is from shared/search.js searchProducts().
 export function searchText(result, experience) {
+  const text = searchBody(result, experience);
+  return experience.requests_enabled ? `${text}\n${SEARCH_NO_REQUEST_OFFER}` : text;
+}
+
+function searchBody(result, experience) {
   const header = requestsStatusText(experience);
   if (result.total === 0) {
     return (
@@ -59,13 +69,18 @@ export function searchText(result, experience) {
   return [header, ...result.shown.map((product) => productLine(product, experience))].join('\n');
 }
 
+// Run A fix 2 (Lisa, Nov 17): with requests enabled, the app shows the Request option, so Claude
+// must not offer one. With requests off there is no Request option, so the line is left out.
+export const NO_REQUEST_OFFER = 'Do not offer a request in your answer. The app shows the Request option.';
+
 // search_products with alternatives_for (T2, Q2 answer A). result is from shared/alternatives.js.
 export function alternativesText(subject, result, experience) {
   const header = requestsStatusText(experience);
+  const noOffer = experience.requests_enabled ? ` ${NO_REQUEST_OFFER}` : '';
   if (result.total === 0) {
     return (
       `${header}\nNo approved products in the buyer's Private Marketplace are in the same category as ` +
-      `${subject.name} (${subject.category}).`
+      `${subject.name} (${subject.category}).${noOffer}`
     );
   }
   const more = result.more ? ` The app shows the first ${result.items.length} and a link to the rest.` : '';
@@ -75,6 +90,7 @@ export function alternativesText(subject, result, experience) {
       `Marketplace ${result.total === 1 ? 'is' : 'are'} in the same category as ${subject.name} ` +
       `(${subject.category}).${more}`,
     ...result.items.map((product) => productLine(product, experience)),
+    ...(noOffer ? [NO_REQUEST_OFFER] : []),
   ].join('\n');
 }
 
