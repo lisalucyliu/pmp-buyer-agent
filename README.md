@@ -103,8 +103,12 @@ The drawer shows some things under the assistant avatar that code makes, not Cla
 - The contact details bubble
 - Every error Alert
 - The support prompts (code decides when they show)
+- The choices to narrow a large search down (frame 7)
+- The search words: code removes general words such as "tools" or "software" before it searches
 
 All fixed text is in `shared/copy.js`.
+
+When Claude broke a rule in testing, that rule moved out of the prompt and into the tool results or into code. docs/prompt-changes.md has each change, with the text before and after.
 
 ## Data
 
