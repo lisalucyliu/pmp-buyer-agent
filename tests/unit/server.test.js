@@ -525,3 +525,71 @@ test('run A fix 4 (Lisa, Nov 17): the search result ends with the no-offer line 
   // Sam (requests off): no line in any case.
   for (const query of ['VPN', 'security', 'Zentrova']) assert.ok(!search(sam, query).includes(line));
 });
+
+test('run B fix 5 (Lisa, Nov 17): a search with 1 product that is not approved asks for an alternatives search', () => {
+  const noOffer = 'Do not offer a request in your answer unless the buyer asks about requests. The app handles requests.';
+  const next = (id) => `Next, call search_products with alternatives_for set to ${id}, unless the buyer asked about price.`;
+  const search = (buyer, query, flags = {}, input = { query }) => {
+    const experience = EXPERIENCES.find((e) => e.id === buyer.experience_id);
+    return runTool('search_products', input, { buyer, experience, requests: [], flags, turn: newTurnState() }).text;
+  };
+  const lumora = byName('Lumora Image Large');
+  const watchtailPro = byName('Watchtail Pro');
+  // Shown: Riley, 1 product that isn't approved. The line comes after the fix 4 line.
+  const meshwire = search(riley, 'Meshwire');
+  assert.match(meshwire, /^- Meshwire by Meshwire/m);
+  assert.equal((meshwire.match(/^- /gm) ?? []).length, 1);
+  assert.ok(meshwire.endsWith(`\n${noOffer}\n${next(MESHWIRE.product_id)}`));
+  // Shown: a product that can't be requested is also not approved.
+  assert.equal((search(riley, lumora.name).match(/^- /gm) ?? []).length, 1);
+  assert.ok(search(riley, lumora.name).endsWith(`\n${next(lumora.product_id)}`));
+  // Not shown: an approved product.
+  const pro = search(riley, watchtailPro.name);
+  assert.equal((pro.match(/^- /gm) ?? []).length, 1);
+  assert.match(pro, /Status: approved\./);
+  assert.doesNotMatch(pro, /Next, call search_products/);
+  // Not shown: more than 1 product.
+  assert.ok((search(riley, 'VPN').match(/^- /gm) ?? []).length > 1);
+  assert.doesNotMatch(search(riley, 'VPN'), /Next, call search_products/);
+  // Fix 7 (Nov 17): requests off (Sam) now shows the line too, at the end, with no fix 4 line.
+  assert.ok(search(sam, 'Meshwire').endsWith(`\n${next(MESHWIRE.product_id)}`));
+  assert.ok(!search(sam, 'Meshwire').includes(noOffer));
+  // Not shown: alternatives already shown, or declined.
+  assert.doesNotMatch(search(riley, 'Meshwire', { alternativesShown: true }), /Next, call search_products/);
+  assert.doesNotMatch(search(riley, 'Meshwire', { alternativesDeclined: true }), /Next, call search_products/);
+  // Not shown: an alternatives_for search.
+  assert.doesNotMatch(search(riley, 'Meshwire', {}, { query: 'Meshwire', alternatives_for: MESHWIRE.product_id }), /Next, call search_products/);
+});
+
+test('run B fix 7 (Lisa, Nov 17): the alternatives line also shows with requests off (Sam)', () => {
+  const next = (id) => `Next, call search_products with alternatives_for set to ${id}, unless the buyer asked about price.`;
+  const search = (query, flags = {}) => {
+    const experience = EXPERIENCES.find((e) => e.id === sam.experience_id);
+    return runTool('search_products', { query }, { buyer: sam, experience, requests: [], flags, turn: newTurnState() }).text;
+  };
+  const count = (text) => (text.match(/^- /gm) ?? []).length;
+  const watchtailPro = byName('Watchtail Pro');
+  // Shown: Watchtail Pro (not approved for Sam). It is the last line, after the requests-off header and the product.
+  const pro = search(watchtailPro.name);
+  assert.equal(count(pro), 1);
+  assert.ok(pro.startsWith('Product requests are turned off in the buyer\'s Private Marketplace.'));
+  assert.ok(pro.endsWith(`Status: not approved. product_id: ${watchtailPro.product_id}.\n${next(watchtailPro.product_id)}`));
+  // Not shown: Lakeforge Data Platform (approved for Sam).
+  const lakeforge = search('Lakeforge Data Platform');
+  assert.equal(count(lakeforge), 1);
+  assert.match(lakeforge, /Status: approved\./);
+  assert.doesNotMatch(lakeforge, /Next, call search_products/);
+  // Not shown: more than 1 product.
+  assert.ok(count(search('VPN')) > 1);
+  assert.doesNotMatch(search('VPN'), /Next, call search_products/);
+  // Not shown: alternatives already shown.
+  assert.doesNotMatch(search(watchtailPro.name, { alternativesShown: true }), /Next, call search_products/);
+});
+
+test('run B fix 6 (Lisa, Nov 17): search first for price and too-big questions; alternatives_for wording', () => {
+  assert.match(SYSTEM_PROMPT, /You can find pricing for <product name> on its product page\." Search for the product first, so the app can show its product page\./);
+  assert.match(SYSTEM_PROMPT, /Each product page has more details\." Search for the products first, so the app can show their product pages or ask the buyer to narrow them down\./);
+  const search = TOOLS.find((t) => t.name === 'search_products').description;
+  assert.match(search, /Do not use alternatives_for for a question about price or about what a product does\./);
+  assert.doesNotMatch(search, /Do not use it for a question about price/);
+});

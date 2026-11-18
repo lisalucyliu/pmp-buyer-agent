@@ -44,10 +44,31 @@ function productLine(product, experience) {
 export const SEARCH_NO_REQUEST_OFFER =
   'Do not offer a request in your answer unless the buyer asks about requests. The app handles requests.';
 
+// Run B fix 5 (Lisa, Nov 17), from B2: with requests on, Claude did not look for alternatives for a
+// product that isn't approved. Fix 7 (Lisa, Nov 17), from run-b2 B7: the same with requests off.
+// Only for a text search with exactly 1 product that isn't approved (this includes a product that
+// can't be requested), before alternatives were shown or declined.
+export const nextAlternativesText = (productId) =>
+  `Next, call search_products with alternatives_for set to ${productId}, unless the buyer asked about price.`;
+
+function alternativesNext(result, experience, flags) {
+  if (result.needsClarify || result.total !== 1 || result.shown.length !== 1) return null;
+  if (flags?.alternativesShown || flags?.alternativesDeclined) return null;
+  const [product] = result.shown;
+  if (statusFor(product, experience.id) === STATUS.APPROVED) return null;
+  return nextAlternativesText(product.product_id);
+}
+
 // search_products, text search. result is from shared/search.js searchProducts().
-export function searchText(result, experience) {
-  const text = searchBody(result, experience);
-  return experience.requests_enabled ? `${text}\n${SEARCH_NO_REQUEST_OFFER}` : text;
+// flags: the request flags (alternativesShown, alternativesDeclined), for fixes 5 and 7.
+// Requests off: no fix 4 line, so the fix 5 line goes at the end (fix 7).
+export function searchText(result, experience, flags = {}) {
+  const next = alternativesNext(result, experience, flags);
+  return [
+    searchBody(result, experience),
+    ...(experience.requests_enabled ? [SEARCH_NO_REQUEST_OFFER] : []),
+    ...(next ? [next] : []),
+  ].join('\n');
 }
 
 function searchBody(result, experience) {

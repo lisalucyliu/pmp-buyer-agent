@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { PRODUCTS, STATUS, findProduct } from '../../shared/catalog.js';
-import { MAX_RESULTS, fuzzyMatch, matchTier, rankProducts, searchProducts, similarity } from '../../shared/search.js';
+import { MAX_RESULTS, fuzzyMatch, matchTier, rankProducts, searchProducts, similarity, withoutGenericWords } from '../../shared/search.js';
 
 const names = (products) => products.map((product) => product.name);
 
@@ -95,4 +95,26 @@ test('exact name search ranks the product first (frames 17, 18, 23)', () => {
   assert.deepEqual(names(searchProducts('Meshwire').shown), ['Meshwire']);
   assert.deepEqual(names(searchProducts('Lumora Image Large').shown), ['Lumora Image Large']);
   assert.deepEqual(names(searchProducts('Tunnelport Access Server').shown), ['Tunnelport Access Server (BYOL)']);
+});
+
+test('run B fix 8 (Lisa, Nov 17): generic words are removed from the query before ranking', () => {
+  // "security tools" gives the same result as "security": 9 matches, so the frame 7 dialog.
+  const tools = searchProducts('security tools');
+  const security = searchProducts('security');
+  assert.equal(tools.query, 'security');
+  assert.equal(tools.total, 9);
+  assert.equal(tools.needsClarify, true);
+  assert.deepEqual(names(tools.matches), names(security.matches));
+  // Whole words, any letter case, extra spaces removed.
+  assert.equal(withoutGenericWords('  Security  TOOLS '), 'Security');
+  assert.equal(withoutGenericWords('VPN software solution'), 'VPN');
+  assert.equal(withoutGenericWords('toolbox'), 'toolbox');
+  // No words left: the query stays as the buyer typed it.
+  assert.equal(searchProducts('Software').query, 'Software');
+  // Same results as before (the ranking rule does not change).
+  for (const query of ['VPN', 'Meshwire', 'Tunnelport Access Server']) {
+    const result = searchProducts(query);
+    assert.equal(result.query, query);
+    assert.deepEqual(names(result.matches), names(rankProducts(PRODUCTS, query)));
+  }
 });

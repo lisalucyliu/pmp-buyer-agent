@@ -116,10 +116,23 @@ export function rankProducts(products, query) {
     .map((entry) => entry.product);
 }
 
+// Run B fix 8 (Lisa, Nov 17), from run-b2 B5: "security tools" found 0 products. These generic words
+// are removed from the query before ranking (whole words, any letter case). If no words are left,
+// the query stays as the buyer typed it.
+export const GENERIC_WORDS = ['tool', 'tools', 'product', 'products', 'software', 'app', 'apps', 'solution', 'solutions'];
+const GENERIC_PATTERN = new RegExp(`\\b(?:${GENERIC_WORDS.join('|')})\\b`, 'gi');
+
+export function withoutGenericWords(query) {
+  const shorter = String(query ?? '').replace(GENERIC_PATTERN, ' ').replace(/\s+/g, ' ').trim();
+  return shorter || query;
+}
+
 // The search the search_products tool runs.
+// query: the query with generic words removed (fix 8). The step line and the tool text use it.
 // shown: the ranked products to list (empty when more than 5 matched).
 // needsClarify: true when more than 5 matched (frame 7).
-export function searchProducts(query, products = PRODUCTS) {
+export function searchProducts(typedQuery, products = PRODUCTS) {
+  const query = withoutGenericWords(typedQuery);
   const matches = rankProducts(products, query);
   const needsClarify = matches.length > MAX_RESULTS;
   return {

@@ -22,8 +22,8 @@ export const TOOLS = [
       'always report the actual vendor. Results show at most 5 products. If more matched, the app asks ' +
       'the buyer to narrow it down, so don\'t list them. Set alternatives_for to a product_id to get the ' +
       'approved products that do the same job as that product. Use it when the buyer asks for approved ' +
-      'alternatives, and when a product the buyer asked about is not approved. Do not use it for a ' +
-      'question about price or about what a product does. Describe the alternatives with one shared line ' +
+      'alternatives, and when a product the buyer asked about is not approved. Do not use alternatives_for ' +
+      'for a question about price or about what a product does. Describe the alternatives with one shared line ' +
       'about the job they do, not a reason for each product. Searching a vendor name returns all of that ' +
       'vendor\'s products. Do not search again for a narrower version of the same query, because the ' +
       'first results already include those products. Search again only if the buyer asks about ' +
@@ -143,7 +143,7 @@ function stepId(turn) {
 }
 
 function runSearch({ query }, ctx) {
-  const { turn, experience } = ctx;
+  const { turn, experience, flags } = ctx;
   const result = searchProducts(query);
   const id = stepId(turn);
   turn.searches += 1;
@@ -151,7 +151,7 @@ function runSearch({ query }, ctx) {
   if (result.needsClarify) turn.clarify = result;
   else turn.searchResults.push(...result.shown);
   return {
-    text: searchText(result, experience),
+    text: searchText(result, experience, flags),
     events: [
       { type: 'step', id, status: 'loading', text: lines.searchLoading(result.query) },
       { type: 'step', id, status: 'success', text: lines.searchDone(result.total), header: lines.searchHeader(result.query) },
