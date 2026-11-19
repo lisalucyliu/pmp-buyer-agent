@@ -61,12 +61,15 @@ function EmptyState({ mode, requestsOn, onPrompt }) {
   );
 }
 
+// The drawer's own scroll area (the App layout drawer content container). It is returned also when the
+// conversation is still too short to scroll. Never the page: with a short conversation, the old code fell
+// back to document.scrollingElement, and the auto-scroll moved the product page down about 2300 px.
 function scrollParent(node) {
   for (let el = node?.parentElement; el; el = el.parentElement) {
     const { overflowY } = getComputedStyle(el);
-    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) return el;
+    if (overflowY === 'auto' || overflowY === 'scroll') return el;
   }
-  return document.scrollingElement;
+  return null;
 }
 
 // The conversation. Inside the section-level Error boundary.
@@ -125,12 +128,14 @@ export default function AssistantDrawer() {
   const announcement = useAnnouncement(conversation.turns);
 
   useEffect(() => {
-    if (focusRequest) promptRef.current?.focus();
+    // preventScroll: focus moves to the prompt input, and the page never scrolls to show it. (The page
+    // jump on "Request approval" came from the auto-scroll, see scrollParent. This is an extra guard.)
+    if (focusRequest) promptRef.current?.focus({ preventScroll: true });
   }, [focusRequest]);
 
   const fillPrompt = (text) => {
     setValue(text);
-    promptRef.current?.focus();
+    promptRef.current?.focus({ preventScroll: true });
   };
 
   const submit = () => {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ask, countAgentCalls, drawer, openFromTrigger, prompt, promptBox, recordLiveRegions, routeAgent, url } from './helpers.js';
+import { ask, countAgentCalls, drawer, openFromTrigger, prompt, promptBox, recordLiveRegions, routeAgent, settled, url } from './helpers.js';
 
 // Free tests for the drawer, with the fake agent (dev/fakeAgentRoute.js) or a fixed stream. No Claude calls.
 
@@ -510,5 +510,38 @@ test.describe('Row 6: errors (frames 8c, 21, 22)', () => {
     await expect(page.getByText("The product request assistant couldn't load.")).toBeVisible();
     await expect(page.getByRole('button', { name: 'Reload page' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Error details' })).toHaveCount(0);
+  });
+});
+
+// Bug (Nov 18): "Request approval" scrolled the product page down about 2300 px. The drawer auto-scroll
+// fell back to the page when the conversation was too short to scroll (scrollParent in AssistantDrawer.jsx).
+test.describe('Page scroll when the drawer opens', () => {
+  test('Meshwire product page: scrollY stays 0 after "Request approval", and the prompt input has focus', async ({ page }) => {
+    await page.goto(url('/products/meshwire', { buyer: 'riley' }));
+    await expect(page.getByRole('button', { name: 'Request approval' }).first()).toBeVisible();
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    await page.getByRole('button', { name: 'Request approval' }).first().click();
+    await expect(drawer(page)).toContainText("You're looking at Meshwire");
+    await expect(promptBox(page)).toBeFocused();
+    await page.waitForTimeout(500); // A late scroll would show here.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test('long conversation: the confirm card heading gets focus, and the page does not scroll', async ({ page }) => {
+    await page.goto(url('/products/meshwire', { buyer: 'riley' }));
+    await openFromTrigger(page);
+    for (let i = 0; i < 4; i += 1) {
+      await ask(page, 'Do we have a VPN I can use?');
+      await settled(page);
+    }
+    await page.getByRole('button', { name: 'Request approval' }).first().click();
+    await expect(promptBox(page)).toBeFocused();
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(600);
+    await ask(page, 'Need this for the Q1 network migration. PO 4500012345');
+    await expect(page.getByTestId('card-heading').last()).toBeFocused();
+    await expect(page.getByTestId('card-heading').last()).toBeInViewport();
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.scrollY)).toBe(600);
   });
 });
