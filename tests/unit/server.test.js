@@ -127,7 +127,7 @@ test('U13: the request body to Claude has no "http", no "example.com" and no pro
   // A long conversation with every kind of history entry the browser sends.
   const history = [
     { role: 'assistant', content: lines.frame5('Meshwire') },
-    { role: 'user', content: COPY.continueWithoutNote },
+    { role: 'user', content: 'Need this for the Q1 network migration.' },
     { role: 'assistant', content: `${COPY.cardIntro} ${lines.cardHeading('Meshwire')}` },
     { role: 'tool_result', content: cardNotes.sent },
     { role: 'assistant', content: '' },
@@ -228,14 +228,68 @@ test('note ask: the first submit in a conversation asks for the note and PO numb
     useTool('submit_request', { product_id: MESHWIRE.product_id }),
   ]);
   assert.equal(api.callCount, 1);
-  assert.deepEqual(events.map((e) => e.type), ['subject', 'note_ask', 'prompts', 'done']);
-  assert.equal(events[2].items[0].text, COPY.continueWithoutNote);
+  // No support prompt: the "Continue without a note" prompt is gone (note required, Lisa, Nov 21).
+  assert.deepEqual(events.map((e) => e.type), ['subject', 'note_ask', 'done']);
+});
+
+test('note required (Lisa, Nov 21): after the ask, an empty note gives the fixed noteMissing line, no card, no Claude text', async () => {
+  for (const note of [undefined, '', '   ']) {
+    const { api, events } = await turn(body({
+      messages: [{ role: 'assistant', content: lines.frame5('Meshwire') }, { role: 'user', content: 'No note' }],
+      flags: { noteAsked: true },
+      subjectProductId: MESHWIRE.product_id,
+    }), [
+      useTool('submit_request', { product_id: MESHWIRE.product_id, ...(note === undefined ? {} : { note }) }),
+      () => { throw new Error('No second call should happen'); },
+    ]);
+    assert.equal(api.callCount, 1, String(note));
+    assert.deepEqual(events.map((e) => e.type), ['subject', 'fixed', 'done'], String(note));
+    assert.deepEqual(events[1], { type: 'fixed', key: 'noteMissing', productId: MESHWIRE.product_id });
+    assert.equal(events.find((e) => e.type === 'card'), undefined);
+    assert.equal(events.find((e) => e.type === 'text'), undefined);
+  }
+});
+
+test('note required: a reply with only a PO number gets the noteMissing line, and the line repeats each time', async () => {
+  const history = [
+    { role: 'assistant', content: lines.frame5('Meshwire') },
+    { role: 'user', content: 'PO 4500012345' },
+    { role: 'assistant', content: COPY.noteMissing },
+    { role: 'user', content: 'Just send it' },
+  ];
+  const { events } = await turn(body({ messages: history, flags: { noteAsked: true }, subjectProductId: MESHWIRE.product_id }), [
+    useTool('submit_request', { product_id: MESHWIRE.product_id, note: '', po_number: '4500012345' }),
+  ]);
+  assert.deepEqual(events.map((e) => e.type), ['subject', 'fixed', 'done']);
+  assert.equal(events[1].key, 'noteMissing');
+});
+
+test('note required: a note with no PO number gives the card (the PO number stays optional)', async () => {
+  const { events } = await turn(body({
+    messages: [{ role: 'assistant', content: lines.frame5('Meshwire') }, { role: 'user', content: 'Need this for the Q1 network migration.' }],
+    flags: { noteAsked: true },
+    subjectProductId: MESHWIRE.product_id,
+  }), [useTool('submit_request', { product_id: MESHWIRE.product_id, note: 'Need this for the Q1 network migration.' })]);
+  assert.deepEqual(events.map((e) => e.type), ['subject', 'card', 'done']);
+  assert.deepEqual(events[1], { type: 'card', productId: MESHWIRE.product_id, note: 'Need this for the Q1 network migration.', poNumber: '' });
+});
+
+test('note required: S5 and the submit_request note field say the note is required and the PO number is optional', () => {
+  assert.match(SYSTEM_PROMPT, /The note is required and the PO number is optional\./);
+  assert.match(SYSTEM_PROMPT, /Do not make up a note for the buyer\./);
+  assert.match(SYSTEM_PROMPT, /A reply that only asks to skip the note, or only gives a PO number, is not a note\. Call submit_request with an empty note\./);
+  assert.doesNotMatch(SYSTEM_PROMPT, /never say that a note is required/i);
+  const submit = TOOLS.find((t) => t.name === 'submit_request').input_schema;
+  assert.match(submit.properties.note.description, /^Required\./);
+  assert.match(submit.properties.note.description, /only gives a PO number, is not a note/);
+  assert.match(submit.properties.po_number.description, /^Optional\./);
+  assert.deepEqual(submit.required, ['product_id']);
 });
 
 test('card result: on the next message the card result goes into the history (card step 7)', async () => {
   const history = [
     { role: 'assistant', content: lines.frame5('Meshwire') },
-    { role: 'user', content: COPY.continueWithoutNote },
+    { role: 'user', content: 'Need this for the Q1 network migration.' },
     { role: 'assistant', content: `${COPY.cardIntro} ${lines.cardHeading('Meshwire')}` },
     { role: 'tool_result', content: cardNotes.sent },
     { role: 'assistant', content: '' },

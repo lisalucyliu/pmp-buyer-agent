@@ -100,10 +100,8 @@ All 3 pages use the console chrome from your console Private Marketplace redesig
 
 The agent speaks first and names the product, so the buyer doesn't have to type it (In-chat context: pre-fill, then confirm what was received). There is no outgoing bubble yet. The agent goes straight into the request, because the "Request approval" button promised one (decided Nov 13 and 14). Alternatives are a secondary choice.
 
-- **Incoming bubble:** "You're looking at Meshwire. It isn't approved for purchase in your Private Marketplace. I can send a request for approval to your administrator. Do you want to add a note or a PO number? Both are optional." (Asked once in chat, decision 14.)
-- **Support prompt group:** vertical, non-editable (sends at once), 2 prompts:
-  1. "Continue without a note"
-  2. "Show approved alternatives" (row 2)
+- **Incoming bubble:** "You're looking at Meshwire. It isn't approved for purchase in your Private Marketplace. I can send a request for approval to your administrator. Add a note for your administrator about why you need this product. A PO number is optional." (Asked once in chat, decision 14. The note is required and the PO number is optional: Lisa, Nov 21, from the AWS buyer docs and blog. This replaces the optional note.)
+- **Support prompt group:** vertical, non-editable (sends at once), 1 prompt: "Show approved alternatives" (row 2). "Continue without a note" is removed, because the note is required (Lisa, Nov 21).
 - **No step line:** the product and its approval status come from the page, so there is nothing to show as a search.
 
 No Sam or D (declined and blocked) variants: those products don't get the "Request approval" button (frame 3 table), so this drawer doesn't open for them from the product page.
@@ -242,14 +240,14 @@ I checked User authorized actions on the live site through Chrome on Nov 14. The
 
 ### Frame 11: confirm card (Riley, Meshwire)
 
-- **When the card shows:** the buyer chose to request, from "Continue without a note" (frame 5), a typed note, "Request Meshwire" (frame 9) or a typed ask. If the agent has not asked for a note and PO number in this conversation, it asks first with the frame 5 copy, then shows the card. If it already asked, the card shows at once (decided Nov 14).
+- **When the card shows:** the buyer gave a note, as a typed reply to the note ask or with "Request Meshwire" (frame 9) or a typed ask. If the agent has not asked for a note and PO number in this conversation, it asks first with the frame 5 copy (decided Nov 14). The note is required and the PO number is optional (Lisa, Nov 21). After the ask, a reply with no note (for example "No note", or only a PO number) gets the fixed line "A note is required. Add a note for your administrator about why you need this product." and no card. Code writes this line, not Claude, and it repeats each time the note is empty.
 - **Code checks before the card:** requests on, product N (not approved), no open request for this product (decision 18). If a check fails, no card shows. A duplicate gets frame 13.
 - **Outgoing bubble (example):** "Need this for the Q1 network migration. PO 4500012345"
 - **Incoming bubble (text):** "Here's the request I'll send to your administrator."
 - **Stacked incoming bubble: the card.**
   - Heading: "Submit request for Meshwire?"
   - Description: "Your administrator will review this request. You can cancel it in Product requests while it's pending." (decided Nov 14). No marketplace name.
-  - Key-value pairs, visible: Note "Need this for the Q1 network migration." and PO number "4500012345". Leave out a row the buyer didn't give. With neither, the card has the description only.
+  - Key-value pairs, visible: Note "Need this for the Q1 network migration." and PO number "4500012345". Leave out the PO number row when the buyer didn't give one. The Note row always shows, because the note is required (Lisa, Nov 21).
   - Vendor row only when the vendor name isn't the product name (decision 21). For example, Tunnelport Access Server (BYOL) shows Vendor "Tunnelport". Meshwire shows none.
   - No fields, no scope selector, no buyer name (decisions 14, 21, 25).
   - Buttons: "Cancel" (normal), "Submit request" (primary).

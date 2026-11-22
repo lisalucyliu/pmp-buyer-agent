@@ -29,6 +29,7 @@ import { findContacts, hasContacts } from '../shared/contacts.js';
 import { COPY, lines } from '../shared/copy.js';
 import { ERROR_TYPE } from '../shared/errorTypes.js';
 import { handOffLine, listForTurn, namedProducts, requestPromptProduct } from '../shared/answerProducts.js';
+import { hasNote } from '../shared/productRequest.js';
 import { CHECK, checkRequest } from '../shared/requestChecks.js';
 import { searchProducts } from '../shared/search.js';
 
@@ -214,7 +215,9 @@ function submitPath(turn, product, { note = '', poNumber = '' } = {}) {
   const check = checkRequest({ productId: product.product_id, buyer, experience, requests, products: PRODUCTS });
   turn.emit({ type: 'subject', productId: product.product_id });
   if (check.result === CHECK.OK) {
-    turn.emit({ type: 'card', productId: product.product_id, note, poNumber }, turn.ctx.stepDelayMs);
+    // The note is required (Lisa, Nov 21): no note means the noteMissing line and no card, the same as runSubmit.
+    if (!hasNote(note)) turn.emit({ type: 'fixed', key: 'noteMissing', productId: product.product_id });
+    else turn.emit({ type: 'card', productId: product.product_id, note, poNumber }, turn.ctx.stepDelayMs);
     return;
   }
   if (check.result === CHECK.DUPLICATE) {
@@ -300,6 +303,9 @@ const CANT_ANSWER = [
   }],
 ];
 
+// Replies to the note ask that mean "no note".
+const NO_NOTE = /^(no|no note|none|skip|just send it|continue without a note)[.!]?$/i;
+
 function parseNote(text) {
   const po = text.match(/\bPO(?:\s*(?:number|#))?\s*:?\s*([A-Za-z0-9-]{4,})/i);
   const poNumber = po ? po[1] : '';
@@ -361,7 +367,6 @@ export function fakeAgentEvents(body, { stepDelayMs = 0, tokenDelayMs = 0 } = {}
       if (check.result === CHECK.OK) {
         turn.emit({ type: 'subject', productId: product.product_id });
         turn.emit({ type: 'note_ask', productId: product.product_id });
-        turn.emit({ type: 'prompts', alignment: 'vertical', editable: false, items: [{ id: 'continue-without-note', text: COPY.continueWithoutNote }] });
         return turn.done();
       }
     }
@@ -369,10 +374,11 @@ export function fakeAgentEvents(body, { stepDelayMs = 0, tokenDelayMs = 0 } = {}
     return turn.done();
   }
 
-  // The answer to the note ask
+  // The answer to the note ask (or to the noteMissing line). A reply that only asks to skip the note, or
+  // only gives a PO number, is not a note (Lisa, Nov 21).
   const lastAssistant = lastAssistantText(messages);
-  if (subject && lastAssistant.endsWith(COPY.noteAsk)) {
-    if (lower === COPY.continueWithoutNote.toLowerCase()) submitPath(turn, subject);
+  if (subject && (lastAssistant.endsWith(COPY.noteAsk) || lastAssistant.endsWith(COPY.noteMissing))) {
+    if (NO_NOTE.test(message.trim())) submitPath(turn, subject);
     else submitPath(turn, subject, parseNote(message));
     return turn.done();
   }

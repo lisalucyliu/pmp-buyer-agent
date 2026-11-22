@@ -23,6 +23,10 @@ export const STATUS_INDICATOR_TYPE = {
 
 export const RECORD_FIELDS = ['account_id', 'product_id', 'experience', 'note', 'po_number', 'date', 'status'];
 
+// The note is required (Lisa, Nov 21). The same test as the backup form's "Reason for request" field.
+// The card check at "Submit request" and the save in api/requests.js use it too.
+export const hasNote = (note) => typeof note === 'string' && note.trim().length > 0;
+
 export function createProductRequest({ accountId, productId, experienceId, note = '', poNumber = '', date = new Date() }) {
   return {
     account_id: accountId,

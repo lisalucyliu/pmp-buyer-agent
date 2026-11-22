@@ -4,6 +4,7 @@ import { ask, countAgentCalls, drawer, openFromTrigger, prompt, promptBox, recor
 // Free tests for the drawer, with the fake agent (dev/fakeAgentRoute.js) or a fixed stream. No Claude calls.
 
 const card = (page) => page.getByTestId('confirm-card').last();
+const NOTE_MISSING = 'A note is required. Add a note for your administrator about why you need this product.';
 // Product List items only (the Steps in a step line are a list too).
 const items = (page) => drawer(page).getByRole('list', { name: 'Products' }).getByRole('listitem');
 
@@ -108,15 +109,15 @@ test.describe('Frames 6 and 7', () => {
 });
 
 test.describe('Frames 5, 9, 10 (alternatives)', () => {
-  test('frame 5: no Claude call, 2 non-editable prompts; frame 9: alternatives and Request Meshwire', async ({ page }) => {
+  test('frame 5: no Claude call, 1 non-editable prompt; frame 9: alternatives and Request Meshwire', async ({ page }) => {
     const calls = countAgentCalls(page);
     await page.goto(url('/products/meshwire'));
     await page.getByRole('button', { name: 'Request approval' }).click();
     await expect(drawer(page)).toContainText(
-      "You're looking at Meshwire. It isn't approved for purchase in your Private Marketplace. I can send a request for approval to your administrator. Do you want to add a note or a PO number? Both are optional.",
+      "You're looking at Meshwire. It isn't approved for purchase in your Private Marketplace. I can send a request for approval to your administrator. Add a note for your administrator about why you need this product. A PO number is optional.",
     );
     expect(calls.count).toBe(0);
-    await expect(page.getByRole('menuitem')).toHaveText(['Continue without a note', 'Show approved alternatives']);
+    await expect(page.getByRole('menuitem')).toHaveText(['Show approved alternatives']);
     await prompt(page, 'Show approved alternatives').click();
     await expect(drawer(page)).toContainText('1 approved product in your Private Marketplace is also used for remote network access (VPN).');
     await page.getByRole('button', { name: 'Checked approved products like Meshwire' }).click();
@@ -147,33 +148,52 @@ test.describe('Row 3 and 4: the card', () => {
     await expect(card(page)).not.toContainText('Vendor');
   });
 
-  test('E2: Vendor row when the vendor differs, rows left out when empty (Watchtail Enterprise, no note)', async ({ page }) => {
+  test('E2: Vendor row when the vendor differs, PO number row left out when empty (Watchtail Enterprise, note only)', async ({ page }) => {
     await page.goto(url('/products/watchtail-enterprise'));
     await page.getByRole('button', { name: 'Request approval' }).click();
-    await prompt(page, 'Continue without a note').click();
+    await ask(page, 'For the security team');
     await expect(card(page)).toContainText('Vendor');
     await expect(card(page)).toContainText('Watchtail');
-    await expect(card(page)).not.toContainText('Note');
+    await expect(card(page)).toContainText('For the security team.');
     await expect(card(page)).not.toContainText('PO number');
   });
 
-  test('note asked once: after frame 5, "Request Meshwire" shows the card at once', async ({ page }) => {
+  test('note asked once: after frame 5, "Request Meshwire" with no note gets the noteMissing line, not a second ask', async ({ page }) => {
     await page.goto(url('/products/meshwire'));
     await page.getByRole('button', { name: 'Request approval' }).click();
     await prompt(page, 'Show approved alternatives').click();
     await prompt(page, 'Request Meshwire').click();
+    await expect(drawer(page)).toContainText(NOTE_MISSING);
+    await expect(card(page)).toHaveCount(0);
+    await expect(drawer(page).getByText(/^Add a note for your administrator about why you need this product\. A PO number is optional\.$/)).toHaveCount(0);
+    await ask(page, 'Need this for the Q1 network migration.');
     await expect(card(page)).toBeVisible();
-    await expect(drawer(page).getByText('Do you want to add a note or a PO number?')).toHaveCount(1);
   });
 
-  test('note asked before the first card when it was not asked yet (typed request)', async ({ page }) => {
+  test('note asked before the first card when it was not asked yet (typed request), with no support prompt', async ({ page }) => {
     await page.goto(url('/'));
     await openFromTrigger(page);
     await ask(page, 'Request Auditlane');
-    await expect(drawer(page)).toContainText('Do you want to add a note or a PO number? Both are optional.');
+    await expect(drawer(page)).toContainText('Add a note for your administrator about why you need this product. A PO number is optional.');
     await expect(card(page)).toHaveCount(0);
-    await prompt(page, 'Continue without a note').click();
+    await expect(page.getByRole('menuitem')).toHaveCount(0);
+    await ask(page, 'We need it for the SOC 2 audit');
     await expect(card(page)).toBeVisible();
+  });
+
+  test('note required (Lisa, Nov 21): no note, then only a PO number, each get the noteMissing line and no card; then a note gives the card', async ({ page }) => {
+    await page.goto(url('/products/meshwire'));
+    await page.getByRole('button', { name: 'Request approval' }).click();
+    await expect(drawer(page)).toContainText("You're looking at Meshwire.");
+    await ask(page, 'No note');
+    await expect(drawer(page).getByText(NOTE_MISSING)).toHaveCount(1);
+    await expect(card(page)).toHaveCount(0);
+    await ask(page, 'PO 4500012345');
+    await expect(drawer(page).getByText(NOTE_MISSING)).toHaveCount(2);
+    await expect(card(page)).toHaveCount(0);
+    await ask(page, 'Need this for the Q1 network migration.');
+    await expect(card(page)).toBeVisible();
+    await expect(card(page)).toContainText('Need this for the Q1 network migration.');
   });
 
   test('E3: Submit with no change: Submitted, success text, new row, Meshwire page changes, no /api/agent call after the click', async ({ page }) => {
@@ -272,6 +292,8 @@ test.describe('Row 3 and 4: the card', () => {
     await page.getByRole('button', { name: 'Request approval' }).click();
     await prompt(page, 'Show approved alternatives').click();
     await prompt(page, 'Request Meshwire').click();
+    await expect(drawer(page)).toContainText(NOTE_MISSING);
+    await ask(page, 'Need this for the Q1 network migration.');
     await card(page).getByRole('button', { name: 'Cancel' }).click();
     await expect(drawer(page)).toContainText("Got it. I didn't send the request.");
     await expect(page.getByRole('menuitem')).toHaveCount(0);

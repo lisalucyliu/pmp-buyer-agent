@@ -223,6 +223,24 @@ test('POST: a duplicate blocked by the database unique index gives the same dupl
   assert.deepEqual(body, { storage: 'on', outcome: 'not_sent', reason: CHECK.DUPLICATE });
 });
 
+test('POST: a record with an empty note is refused and not saved (note required, Lisa, Nov 21)', async () => {
+  const db = fakeSupabase();
+  for (const note of ['', '   ', undefined]) {
+    const { result: response, logged } = await quietly(() => handleRequests(post({ visitor: VISITOR, record: record({ note }) }), { client: db }));
+    assert.equal(response.status, 400, JSON.stringify(note));
+    assert.deepEqual(await response.json(), { error: 'bad_request' });
+    assert.deepEqual(logged, ['[requests] refused: note is empty']);
+  }
+  assert.equal(db.rows.length, 0);
+});
+
+test('POST: a note with no PO number is saved (the PO number stays optional)', async () => {
+  const db = fakeSupabase();
+  const { body } = await answer(await handleRequests(post({ visitor: VISITOR, record: record({ po_number: '' }) }), { client: db }));
+  assert.equal(body.outcome, 'submitted');
+  assert.equal(db.rows[0].po_number, '');
+});
+
 test(`POST: at most ${MAX_ROWS_PER_VISITOR} rows for each visitor; more is refused`, async () => {
   const rows = Array.from({ length: MAX_ROWS_PER_VISITOR }, (_, i) =>
     storedRow({ request_id: `r${i}`, account_id: i % 2 ? sam.account_id : riley.account_id, product_id: `prod-${i}`, status: 'Canceled' }));

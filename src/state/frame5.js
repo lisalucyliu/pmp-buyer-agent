@@ -15,10 +15,7 @@ export function frame5Turn(productId) {
     prompts: {
       alignment: 'vertical',
       editable: false,
-      items: [
-        { id: 'continue-without-note', text: COPY.continueWithoutNote },
-        { id: 'show-alternatives', text: COPY.showAlternatives },
-      ],
+      items: [{ id: 'show-alternatives', text: COPY.showAlternatives }],
     },
   };
 }

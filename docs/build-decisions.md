@@ -53,7 +53,13 @@ Before you rewrite the system prompt, use the few-shot-patterns skill from the p
 - Requests-off order: answer, alternatives, then the hand-off line. Remove the line about including product links and the AWS docs link (decision 91).
 - Replace "When a product is approved, give the buyer its product page link" with a line that the app shows product links. Remove the link-format rules and the `<link>` placeholders in both examples. Keep "You cannot purchase anything." (row 7 Build notes).
 - New rules: "I can't buy products for you." first for any buy request; no prices, ranges or pricing models; P5 (simple questions) limits: at most 3 short sentences, catalog facts only, no recommendation, at most 5 products; too-big request copy from decision 112 (row 7 Build notes).
-- Note and PO number: asked once per conversation, before the first card (decision 66).
+- Note and PO number: asked once per conversation, before the first card (decision 66). Since Nov 21 the note is required and the PO number is optional. See "Later decisions" below.
+
+## Later decisions
+
+| Decision | Source | Date | Replaces |
+| --- | --- | --- | --- |
+| The request note is required in the assistant, the same as the backup form ("Reason for request"). The PO number stays optional. After the note ask, an empty note gets the fixed noteMissing line and no card, each time. The check at "Submit request" and the save in `api/requests.js` reject an empty note, so a request with no note is never saved. "Continue without a note" is removed. | Lisa, from the AWS buyer docs and blog: the request form asks for a reason, and the PO number is optional. | Nov 21, 2026 | The optional note of decision 66. |
 
 ## Figma
 

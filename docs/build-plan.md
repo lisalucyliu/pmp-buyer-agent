@@ -87,8 +87,8 @@ Why `shared/`: before Supabase the request list lives in the browser (decision 7
 
 ### The confirm card (frames 11, 12, 14, 16)
 
-1. Before the first card in a conversation, code asks for the note and PO number once (decision 66). The ask is fixed copy: "Do you want to add a note or a PO number? Both are optional." (frame 5). The flag "note asked" goes into the conversation state.
-2. Claude calls `submit_request` with product_id, note and PO number. The server runs the checks (decision 18). A duplicate gets the frame 13 line and no card.
+1. Before the first card in a conversation, code asks for the note and PO number once (decision 66). The ask is fixed copy: "Add a note for your administrator about why you need this product. A PO number is optional." (frame 5). The flag "note asked" goes into the conversation state. The note is required and the PO number is optional (Lisa, Nov 21).
+2. Claude calls `submit_request` with product_id, note and PO number. The server runs the checks (decision 18). A duplicate gets the frame 13 line and no card. After the ask, an empty note gets the fixed line "A note is required. Add a note for your administrator about why you need this product." and no card, each time (Lisa, Nov 21).
 3. Checks pass: the server sends the fixed line "Here's the request I'll send to your administrator." and the `card` event, then stops. The tool call stays open in the history.
 4. The card shows in the drawer. Focus moves to its heading. No dialog role, no focus trap. The prompt input stays enabled.
 5. **"Submit request" selected.** All of this runs in the browser. There is no call to Claude, because the success copy is fixed in code (decision 73).
@@ -135,7 +135,7 @@ Line numbers are in `~/pmp-tiny-agent/tiny_agent.py`. Before I write the new pro
 | S2 | Format rule: drop "formatted for a terminal". Keep plain text, no markdown, no em dashes. Code also renders plain text (decision 110). | decision 110 | 48 to 52 |
 | S3 | Replace "When a product is approved, give the buyer its product page link so they can view purchase options and subscribe themselves." with a line that the app shows a link for each product the answer names, and that Claude never writes a URL. Keep "You cannot purchase anything." | row 7, decision 103 | 56 to 58 |
 | S4 | Remove "If a product is retired, say so and name its replacement." | decisions 4, 20 | 58 to 59 |
-| S5 | Note and PO rule: the app asks once, before the first card. Claude doesn't ask again and never says a note is required. Pass the buyer's note and PO number to submit_request. | decision 66 | 66 to 70 |
+| S5 | Note and PO rule: the app asks before the first card. The note is required and the PO number is optional (Lisa, Nov 21). Claude doesn't ask for them and doesn't make up a note. Pass the buyer's note and PO number to submit_request. With no note, Claude passes an empty note, and the app asks again. | decision 66, note required (Lisa, Nov 21) | 66 to 70 |
 | S6 | Length rule: keep "Answer the buyer's question in the first sentence." Remove "Summarize the rest as a count", because code never shows more than 5 (more than 5 gets the frame 7 question). | decision 19 | 72 to 76 |
 | S7 | Remove the link format rules ("write the name followed by its link", "include its link so the buyer can share it"). | row 7 | 78 to 82 |
 | S8 | Keep "state the difference in one short phrase". Change "Do not recommend one unless the buyer has told you what they need" to no recommendation at all (P5 (simple questions) rule). | row 7 | 84 to 86 |

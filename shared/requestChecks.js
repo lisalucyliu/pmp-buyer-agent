@@ -12,6 +12,9 @@ export const CHECK = {
   APPROVED: 'approved',
   DECLINED_BLOCKED: 'declined_blocked', // D (declined and blocked)
   DUPLICATE: 'duplicate', // A Pending request exists (frame 13)
+  // The note is empty (Lisa, Nov 21). checkRequest does not return it: only the check at "Submit request"
+  // (shared/submitRequest.js) does, after the checks above pass.
+  NOTE_MISSING: 'note_missing',
 };
 
 export function checkRequest({ productId, buyer, experience, requests, products }) {

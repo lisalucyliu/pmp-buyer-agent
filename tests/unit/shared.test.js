@@ -12,6 +12,10 @@ import { discoverRoute, productIdForRoute, productRoute, requestFormRoute } from
 import { CHECK, checkRequest } from '../../shared/requestChecks.js';
 import { listForTurn, namedProducts, requestPromptProduct } from '../../shared/answerProducts.js';
 import { resolveSubmit } from '../../shared/submitRequest.js';
+import { cardNotes } from '../../shared/agentNotes.js';
+import { hasNote } from '../../shared/productRequest.js';
+import { fixedText, submitOutcome } from '../../src/drawer/conversationLogic.js';
+import { fakeAgentEvents } from '../fakeAgent.js';
 import { searchProducts } from '../../shared/search.js';
 
 const names = (products) => products.map((product) => product.name);
@@ -222,6 +226,78 @@ test('U7: open a card, change the data, then submit. Each time: Not sent, the fr
     assert.equal(result.reason, reason);
     assert.equal(result.record, null);
   }
+});
+
+// ---- Note required (Lisa, Nov 21) ----
+
+test('note required: hasNote is the backup form check (empty or only spaces is no note)', () => {
+  for (const note of ['', '   ', '\n', undefined, null]) assert.equal(hasNote(note), false, JSON.stringify(note));
+  assert.equal(hasNote('For the platform team'), true);
+});
+
+test('note required: Submit request with an empty note is Not sent, shows the noteMissing line, and saves nothing', () => {
+  for (const note of ['', '  ', undefined]) {
+    const card = { productId: 'prod-rqccxbpo', note, poNumber: '4500012345' };
+    const result = resolveSubmit({ card, buyer: riley, experience: engineering, requests: [], products: PRODUCTS });
+    assert.equal(result.outcome, 'not_sent');
+    assert.equal(result.reason, CHECK.NOTE_MISSING);
+    assert.equal(result.record, null);
+    const outcome = submitOutcome({ card, buyer: riley, experience: engineering, requests: [], products: PRODUCTS });
+    assert.equal(outcome.cardState, 'not_sent');
+    assert.equal(outcome.record, null);
+    assert.deepEqual(outcome.blocks.map(fixedText), [COPY.noteMissing]);
+    assert.equal(outcome.historyNote, 'The buyer selected Submit request. The request was not sent. The buyer must add a note.');
+    assert.equal(outcome.historyNote, cardNotes.notSent(CHECK.NOTE_MISSING));
+  }
+});
+
+test('note required: a note with no PO number is saved', () => {
+  const result = resolveSubmit({ card: { productId: 'prod-rqccxbpo', note: 'For the platform team', poNumber: '' }, buyer: riley, experience: engineering, requests: [], products: PRODUCTS });
+  assert.equal(result.outcome, 'submitted');
+  assert.equal(result.record.note, 'For the platform team');
+  assert.equal(result.record.po_number, '');
+});
+
+test('note required: the copy (Lisa, Nov 21)', () => {
+  assert.equal(COPY.noteAsk, 'Add a note for your administrator about why you need this product. A PO number is optional.');
+  assert.equal(COPY.noteMissing, 'A note is required. Add a note for your administrator about why you need this product.');
+  assert.equal(COPY.continueWithoutNote, undefined);
+  assert.equal(lines.frame5('Meshwire'), "You're looking at Meshwire. It isn't approved for purchase in your Private Marketplace. I can send a request for approval to your administrator. Add a note for your administrator about why you need this product. A PO number is optional.");
+});
+
+// The fake agent (npm run dev:fake and the UI tests): replies to the note ask.
+function fakeNoteReply(reply, lastLine = lines.frame5('Meshwire')) {
+  const meshwire = PRODUCTS.find((p) => p.name === 'Meshwire');
+  const events = fakeAgentEvents({
+    buyerId: 'riley',
+    messages: [{ role: 'assistant', content: lastLine }, { role: 'user', content: reply }],
+    openRequests: [],
+    flags: { noteAsked: true },
+    subjectProductId: meshwire.product_id,
+  }).map(({ event }) => event);
+  return { card: events.find((e) => e.type === 'card'), fixed: events.filter((e) => e.type === 'fixed').map((e) => e.key) };
+}
+
+test('fake agent: "no", "no note", "none", "skip", "just send it" and "continue without a note" get the noteMissing line and no card', () => {
+  for (const reply of ['No', 'no note', 'None.', 'Skip', 'Just send it', 'Continue without a note']) {
+    const { card, fixed } = fakeNoteReply(reply);
+    assert.equal(card, undefined, reply);
+    assert.deepEqual(fixed, ['noteMissing'], reply);
+  }
+});
+
+test('fake agent: a reply that is only a PO number gets the noteMissing line and no card', () => {
+  for (const reply of ['PO 4500012345', 'PO number: 4500012345']) {
+    const { card, fixed } = fakeNoteReply(reply);
+    assert.equal(card, undefined, reply);
+    assert.deepEqual(fixed, ['noteMissing'], reply);
+  }
+});
+
+test('fake agent: a note after the noteMissing line gives the card; a note with no PO number has an empty PO number', () => {
+  const { card } = fakeNoteReply('Need this for the Q1 network migration', COPY.noteMissing);
+  assert.equal(card.note, 'Need this for the Q1 network migration.');
+  assert.equal(card.poNumber, '');
 });
 
 // ---- U8: contact details ----

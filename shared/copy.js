@@ -50,9 +50,11 @@ export const COPY = {
   promptIsApproved: 'Is <product name> approved for purchase?',
   promptFindApproved: 'Find an approved product for <what you need>',
 
-  // Frame 5 and the note ask (Q5: fixed in code, asked once per conversation, decision 66)
-  noteAsk: 'Do you want to add a note or a PO number? Both are optional.',
-  continueWithoutNote: 'Continue without a note',
+  // Frame 5 and the note ask (Q5: fixed in code, decision 66). The note is required and the PO number is
+  // optional, the same as the backup form (Lisa, Nov 21, from the AWS buyer docs and blog).
+  noteAsk: 'Add a note for your administrator about why you need this product. A PO number is optional.',
+  // Code sends this line each time the buyer answers the note ask with no note. No card.
+  noteMissing: 'A note is required. Add a note for your administrator about why you need this product.',
   showAlternatives: 'Show approved alternatives',
 
   // Card (frames 11, 12)

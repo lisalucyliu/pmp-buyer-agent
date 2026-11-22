@@ -10,6 +10,7 @@ const NOT_SENT_REASON = {
   [CHECK.REQUESTS_OFF]: 'Product requests are now turned off.',
   [CHECK.DECLINED_BLOCKED]: "This product can't be requested.",
   [CHECK.NOT_FOUND]: 'The product was not found.',
+  [CHECK.NOTE_MISSING]: 'The buyer must add a note.',
 };
 
 export const cardNotes = {

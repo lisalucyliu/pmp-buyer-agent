@@ -7,7 +7,7 @@
 // keeps requests in the browser session only (decision 7).
 // No key, URL or database error text goes in a response or a log line. Logs have a short reason only.
 import { BUYERS, EXPERIENCES, PRODUCTS, experienceFor, findProduct } from '../shared/catalog.js';
-import { REQUEST_STATUS, createProductRequest } from '../shared/productRequest.js';
+import { REQUEST_STATUS, createProductRequest, hasNote } from '../shared/productRequest.js';
 import { CHECK, checkRequest } from '../shared/requestChecks.js';
 import { TABLE, json, storageClient } from '../server/supabase.js';
 
@@ -69,7 +69,9 @@ async function handlePost(request, db) {
   if (record.experience !== experience.id) return badRequest('experience does not match the buyer');
   const note = record.note ?? '';
   const poNumber = record.po_number ?? '';
-  if (typeof note !== 'string' || note.trim().length > NOTE_MAX) return badRequest('note is too long');
+  // The note is required (Lisa, Nov 21), the same check as the browser. A request with no note is never saved.
+  if (!hasNote(note)) return badRequest('note is empty');
+  if (note.trim().length > NOTE_MAX) return badRequest('note is too long');
   if (typeof poNumber !== 'string' || poNumber.trim().length > PO_NUMBER_MAX) return badRequest('PO number is too long');
   const date = new Date(record.date);
   if (typeof record.date !== 'string' || Number.isNaN(date.getTime())) return badRequest('date is not valid');

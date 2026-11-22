@@ -11,6 +11,7 @@ import SpaceBetween from '@cloudscape-design/components/space-between';
 import Textarea from '@cloudscape-design/components/textarea';
 import { PRODUCTS, findProduct, isApproved } from '../../shared/catalog.js';
 import { COPY } from '../../shared/copy.js';
+import { hasNote } from '../../shared/productRequest.js';
 import { ROUTES } from '../../shared/productRoutes.js';
 import { CHECK } from '../../shared/requestChecks.js';
 import { resolveSubmit } from '../../shared/submitRequest.js';
@@ -24,6 +25,7 @@ const FORM_ERRORS = {
   [CHECK.DECLINED_BLOCKED]: "This product can't be requested.",
   [CHECK.DUPLICATE]: 'You already sent a request for this product. View its status in Product requests.',
   [CHECK.NOT_FOUND]: 'Product is required.',
+  [CHECK.NOTE_MISSING]: 'Reason for request is required.',
 };
 
 // Backup request form (decided Nov 13 and 14). A stand-in: we don't know the real form's layout.
@@ -46,7 +48,7 @@ export default function RequestForm() {
   const submit = async () => {
     const fieldErrors = {};
     if (!productId) fieldErrors.product = 'Product is required.';
-    if (!reason.trim()) fieldErrors.reason = 'Reason for request is required.';
+    if (!hasNote(reason)) fieldErrors.reason = 'Reason for request is required.';
     setErrors(fieldErrors);
     setFormError('');
     if (Object.keys(fieldErrors).length) return;

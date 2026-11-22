@@ -2,12 +2,16 @@
 // Runs in the browser with the current data. No call to Claude (decision 73).
 // Recheck at submit (decision 78): the same checks as before the card.
 import { CHECK, checkRequest } from './requestChecks.js';
-import { createProductRequest } from './productRequest.js';
+import { createProductRequest, hasNote } from './productRequest.js';
 
 export function resolveSubmit({ card, buyer, experience, requests, products, date = new Date() }) {
   const check = checkRequest({ productId: card.productId, buyer, experience, requests, products });
   if (check.result !== CHECK.OK) {
     return { outcome: 'not_sent', reason: check.result, product: check.product, record: null };
+  }
+  // The note is required (Lisa, Nov 21). A request with no note is never saved.
+  if (!hasNote(card.note)) {
+    return { outcome: 'not_sent', reason: CHECK.NOTE_MISSING, product: check.product, record: null };
   }
   const record = createProductRequest({
     accountId: buyer.account_id,

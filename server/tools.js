@@ -4,7 +4,8 @@
 // Every rule comes from shared/: search and ranking, alternatives, request checks, contacts.
 import { findProduct } from '../shared/catalog.js';
 import { findAlternatives } from '../shared/alternatives.js';
-import { COPY, lines } from '../shared/copy.js';
+import { lines } from '../shared/copy.js';
+import { hasNote } from '../shared/productRequest.js';
 import { CHECK, checkRequest } from '../shared/requestChecks.js';
 import { searchProducts } from '../shared/search.js';
 import { alternativesText, invalidInputText, requestsStatusText, searchText, submitText, unknownProductText } from './toolText.js';
@@ -78,11 +79,17 @@ export const TOOLS = [
         },
         note: {
           type: 'string',
-          description: 'An optional note from the buyer to their administrator, in their own words. Leave empty if the buyer has none.',
+          // Note required (Lisa, Nov 21). Not in "required" below, so an empty note reaches runSubmit,
+          // which sends the noteMissing line.
+          description:
+            "Required. The buyer's note to their administrator about why they need this product, in the " +
+            "buyer's own words. Do not write a note for the buyer. A reply that only asks to skip the note, " +
+            'or only gives a PO number, is not a note. If the buyer gave none, leave it empty and the app ' +
+            'asks for one.',
         },
         po_number: {
           type: 'string',
-          description: 'A purchase order number, if the buyer gives one.',
+          description: 'Optional. A purchase order number, if the buyer gives one.',
         },
       },
       required: ['product_id'],
@@ -192,15 +199,12 @@ function runSubmit({ product_id: productId, note = '', po_number: poNumber = '' 
   if (check.result === CHECK.OK) {
     // The note and PO number ask comes first, once per conversation (decision 66, Q5).
     if (!flags.noteAsked) {
-      return {
-        text: null,
-        events: [
-          subject,
-          { type: 'note_ask', productId: product.product_id },
-          { type: 'prompts', alignment: 'vertical', editable: false, items: [{ id: 'continue-without-note', text: COPY.continueWithoutNote }] },
-        ],
-        endTurn: true,
-      };
+      return { text: null, events: [subject, { type: 'note_ask', productId: product.product_id }], endTurn: true };
+    }
+    // The note is required (Lisa, Nov 21). After the ask, an empty note gets the fixed noteMissing line and
+    // no card, each time. Claude does not write this line.
+    if (!hasNote(note)) {
+      return { text: null, events: [subject, { type: 'fixed', key: 'noteMissing', productId: product.product_id }], endTurn: true };
     }
     return {
       text: null,

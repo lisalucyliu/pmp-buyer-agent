@@ -35,6 +35,7 @@ export function fixedText(block) {
     case 'blockedNotSent': return lines.blockedNotSent(block.hasContacts);
     case 'cancelled': return COPY.cancelled;
     case 'noteAsk': return COPY.noteAsk;
+    case 'noteMissing': return COPY.noteMissing;
     case 'cardIntro': return COPY.cardIntro;
     case 'frame5': return lines.frame5(name);
     default: return '';
@@ -129,6 +130,7 @@ export function notSentBlocks(reason, productId, experience) {
   const hasContacts = Boolean(contacts.email || contacts.slack);
   const blocks = [];
   if (reason === CHECK.DUPLICATE) blocks.push({ type: 'fixed', id: newId('b'), key: 'duplicate', productId });
+  if (reason === CHECK.NOTE_MISSING) blocks.push({ type: 'fixed', id: newId('b'), key: 'noteMissing', productId });
   if (reason === CHECK.APPROVED) {
     blocks.push({ type: 'fixed', id: newId('b'), key: 'approvedNow', productId });
     blocks.push({ type: 'list', id: newId('b'), ids: [productId] });
