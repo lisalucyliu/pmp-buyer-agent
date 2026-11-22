@@ -9,7 +9,10 @@
     {
       "say": "Compare all the security tools in a table",
       "expectedPaidRequests": 2
+    },
+    {
+      "choose": "Firewall and VPN"
     }
   ],
-  "lookFor": "\"I can only give short answers about products. Each product page has more details.\" 9 matches, so the frame 7 dialog. No table, no list of products, no hand-off."
+  "lookFor": "\"I can only give short answers about products. Each product page has more details.\" 9 matches, so the frame 7 dialog. No table, no list of products, no hand-off. After the choice \"Firewall and VPN\": 0 paid requests, because code answers a choice. The List shows all 4 products in the Network firewall and Remote network access (VPN) categories, not only the products that matched \"security\". Products approved for Riley come first, then catalog order: Tunnelport Access Server (BYOL), Meshwire, Bastion NGFW VM, Shalecrest UTM 9. No frame 7 dialog after the choice."
 }

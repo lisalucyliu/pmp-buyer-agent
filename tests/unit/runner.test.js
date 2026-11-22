@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { MODEL } from '../../api/agent.js';
 import { PRODUCTS } from '../../shared/catalog.js';
-import { COPY } from '../../shared/copy.js';
+import { COPY, lines } from '../../shared/copy.js';
 import { cardNotes } from '../../shared/agentNotes.js';
 import { costOf, dryRunText, planOf, readConversations, runConversation, summaryMarkdown } from '../../scripts/run_agent.js';
 import { fakeClaude, say, useTool } from '../fakeClaude.js';
@@ -134,4 +134,45 @@ test('runner, frame 7: after the buyer picks a choice, that turn shows no dialog
   assert.ok(!choice.buyerSees.bubbles.some((b) => b.type === 'frame 7 dialog (code)'));
   const summary = summaryMarkdown([record], 'test');
   assert.equal(summary.match(/Frame 7 dialog:/g).length, 1);
+});
+
+test('runner, frame 7 choice: code writes the answer, so its text is "text (code)" in buyerSees and summary.md', async () => {
+  const [conversation] = readConversations('b').filter((c) => c.id.startsWith('B5'));
+  const api = fakeClaude([
+    useTool('search_products', { query: 'security' }),
+    say('I can only give short answers about products. Each product page has more details.'),
+  ]);
+  const record = await runConversation(conversation, api);
+  assert.equal(api.callCount, 2, 'the choice makes no Claude call');
+  const [first, choice] = record.steps;
+  assert.equal(first.buyerSees.bubbles[0].type, 'text (Claude)');
+  assert.equal(choice.choose, 'Firewall and VPN');
+  assert.equal(choice.paidRequests, 0);
+  const text = choice.buyerSees.bubbles.find((b) => b.type.startsWith('text'));
+  assert.equal(text.type, 'text (code)');
+  assert.match(text.text, /^4 products in your Private Marketplace are used for firewall and VPN\./);
+  assert.ok(!choice.buyerSees.bubbles.some((b) => b.type === 'text (Claude)'));
+  assert.deepEqual(choice.buyerSees.bubbles.find((b) => b.type === 'list (code)').items, ['Tunnelport Access Server (BYOL)', 'Meshwire', 'Bastion NGFW VM', 'Shalecrest UTM 9']);
+  const summary = summaryMarkdown([record], 'test');
+  assert.match(summary, /Text \(code\): 4 products in your Private Marketplace are used for firewall and VPN\./);
+  assert.doesNotMatch(summary, /Text \(code\): I can only give short answers/);
+});
+
+test('runner, frame 17: code writes the hand-off bubble, so it is "stacked (code)" in buyerSees and summary.md', async () => {
+  const [conversation] = readConversations('a').filter((c) => c.id.startsWith('A4'));
+  const api = fakeClaude([
+    useTool('search_products', { query: 'Meshwire' }),
+    say("Meshwire isn't approved for purchase in your Private Marketplace."),
+  ]);
+  const record = await runConversation(conversation, api);
+  const { bubbles } = record.steps[0].buyerSees;
+  assert.equal(bubbles[0].type, 'text (Claude)');
+  const handOff = bubbles.find((b) => b.type.startsWith('stacked'));
+  assert.equal(handOff.type, 'stacked (code)');
+  assert.equal(handOff.text, lines.handOffRequestsOff('Meshwire', false));
+  assert.ok(!bubbles.some((b) => b.type === 'stacked'));
+  const summary = summaryMarkdown([record], 'test');
+  assert.ok(summary.includes(`Stacked (code): ${handOff.text}`));
+  // Claude's text in the same turn keeps no code label.
+  assert.ok(summary.includes(`| Meshwire isn't approved for purchase in your Private Marketplace. / List: Meshwire / Stacked (code): ${handOff.text} |`));
 });

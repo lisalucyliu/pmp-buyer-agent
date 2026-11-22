@@ -61,15 +61,17 @@ export function readConversations(run) {
 
 // What the buyer sees in one assistant turn, in order.
 // clarify: the frame 7 dialog this turn left open (conversation.clarify), or null. The dialog shows after the bubbles.
-export function buyerView(turn, clarify = null) {
+// textBy: who wrote the turn's text. 'code' for a frame 7 choice answer (shared/choiceAnswer.js, no Claude call).
+export function buyerView(turn, clarify = null, { textBy = 'Claude' } = {}) {
   const dialog = clarify && clarify.turnId === turn.id
     ? [{ type: 'frame 7 dialog (code)', query: clarify.query, choices: clarify.choices.map((c) => c.label) }]
     : [];
   return {
     steps: turn.steps.map((step) => ({ header: step.header ?? null, text: step.text, status: step.status })),
     bubbles: [...turn.blocks.map((block) => {
-      if (block.type === 'text') return { type: 'text (Claude)', text: block.text };
-      if (block.type === 'stacked') return { type: 'stacked', text: block.text };
+      if (block.type === 'text') return { type: `text (${textBy})`, text: block.text };
+      // The hand-off bubble (frames 17, 18): code writes it (api/agent.js, afterText), never Claude.
+      if (block.type === 'stacked') return { type: 'stacked (code)', text: block.text };
       if (block.type === 'fixed') return { type: 'fixed (code)', text: fixedText(block) };
       if (block.type === 'list') return { type: 'list (code)', items: (block.ids ?? []).map((id) => findProduct(id).name), moreHref: block.moreHref ?? null };
       if (block.type === 'contact') return { type: 'contact (code)', email: block.email, slack: block.slack };
@@ -164,7 +166,9 @@ export class Session {
       history: error ? this.conversation.history : [...this.conversation.history, { role: 'assistant', content: turnText(done) }],
       turns: this.conversation.turns.map((t) => (t.id === turnId ? done : t)),
     };
-    return { body, events, calls: result.calls, error, view: buyerView(done, this.conversation.clarify) };
+    // A frame 7 choice is answered by code (api/agent.js, runChoiceTurn), so its text is code text.
+    const view = buyerView(done, this.conversation.clarify, { textBy: choice ? 'code' : 'Claude' });
+    return { body, events, calls: result.calls, error, view };
   }
 
   // "Submit request": the browser's recheck and save, with no Claude call.
@@ -260,6 +264,8 @@ export function summaryMarkdown(records, label) {
     const tools = said.flatMap((s) => (s.calls ?? []).flatMap((c) => c.toolCalls.map((t) => t.name + (t.input?.alternatives_for ? ' (alternatives)' : '')))).join(', ');
     const bubbleText = (b) => {
       if (b.choices) return `Frame 7 dialog: ${b.choices.join(', ')}`;
+      if (b.type === 'text (code)') return `Text (code): ${b.text}`;
+      if (b.type === 'stacked (code)') return `Stacked (code): ${b.text}`;
       return b.text ?? (b.items ? `List: ${b.items.join(', ')}` : b.heading ?? b.type);
     };
     const sees = r.steps
