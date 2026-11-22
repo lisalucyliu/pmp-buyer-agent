@@ -60,10 +60,14 @@ export function readConversations(run) {
 }
 
 // What the buyer sees in one assistant turn, in order.
-export function buyerView(turn) {
+// clarify: the frame 7 dialog this turn left open (conversation.clarify), or null. The dialog shows after the bubbles.
+export function buyerView(turn, clarify = null) {
+  const dialog = clarify && clarify.turnId === turn.id
+    ? [{ type: 'frame 7 dialog (code)', query: clarify.query, choices: clarify.choices.map((c) => c.label) }]
+    : [];
   return {
     steps: turn.steps.map((step) => ({ header: step.header ?? null, text: step.text, status: step.status })),
-    bubbles: turn.blocks.map((block) => {
+    bubbles: [...turn.blocks.map((block) => {
       if (block.type === 'text') return { type: 'text (Claude)', text: block.text };
       if (block.type === 'stacked') return { type: 'stacked', text: block.text };
       if (block.type === 'fixed') return { type: 'fixed (code)', text: fixedText(block) };
@@ -71,7 +75,7 @@ export function buyerView(turn) {
       if (block.type === 'contact') return { type: 'contact (code)', email: block.email, slack: block.slack };
       if (block.type === 'card') return { type: 'card (code)', heading: lines.cardHeading(findProduct(block.productId).name), note: block.note, poNumber: block.poNumber, state: block.state };
       return { type: block.type };
-    }),
+    }), ...dialog],
     prompts: turn.prompts?.items.map((item) => item.text) ?? [],
     error: turn.errorType ?? null,
   };
@@ -160,7 +164,7 @@ export class Session {
       history: error ? this.conversation.history : [...this.conversation.history, { role: 'assistant', content: turnText(done) }],
       turns: this.conversation.turns.map((t) => (t.id === turnId ? done : t)),
     };
-    return { body, events, calls: result.calls, error, view: buyerView(done) };
+    return { body, events, calls: result.calls, error, view: buyerView(done, this.conversation.clarify) };
   }
 
   // "Submit request": the browser's recheck and save, with no Claude call.
@@ -254,8 +258,12 @@ export function summaryMarkdown(records, label) {
   const rows = records.map((r) => {
     const said = r.steps.filter((s) => s.say || s.choose);
     const tools = said.flatMap((s) => (s.calls ?? []).flatMap((c) => c.toolCalls.map((t) => t.name + (t.input?.alternatives_for ? ' (alternatives)' : '')))).join(', ');
+    const bubbleText = (b) => {
+      if (b.choices) return `Frame 7 dialog: ${b.choices.join(', ')}`;
+      return b.text ?? (b.items ? `List: ${b.items.join(', ')}` : b.heading ?? b.type);
+    };
     const sees = r.steps
-      .map((s) => s.buyerSees?.bubbles.map((b) => b.text ?? (b.items ? `List: ${b.items.join(', ')}` : b.heading ?? b.type)).join(' / ') ?? (s.card ? `Card: ${s.cardState}` : ''))
+      .map((s) => s.buyerSees?.bubbles.map(bubbleText).join(' / ') ?? (s.card ? `Card: ${s.cardState}` : ''))
       .filter(Boolean)
       .join(' // ');
     const errors = r.steps.map((s) => s.error?.message ?? s.error).filter(Boolean).join('; ');

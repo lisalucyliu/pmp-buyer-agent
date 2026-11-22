@@ -97,3 +97,41 @@ test('Q6: the runner records which model wrote each answer; summary.md names a f
   assert.match(summary, /A fallback model answered 1 call\. See the Model column\./);
   assert.match(summary, /\| claude-sonnet-5-5, FALLBACK: claude-sonnet-5 answered \|/);
 });
+
+const SECURITY_CHOICES = ['Threat detection and response', 'Firewall and VPN', 'Compliance automation', 'Server and workload protection'];
+
+test('runner, frame 7: a too-big search shows the dialog and its choices in buyerSees and summary.md', async () => {
+  const [conversation] = readConversations('b').filter((c) => c.id.startsWith('B5'));
+  const api = fakeClaude([
+    useTool('search_products', { query: 'security' }),
+    say('I can only give short answers about products. Each product page has more details.'),
+  ]);
+  const record = await runConversation(conversation, api);
+  assert.equal(api.callCount, 2);
+  const [step] = record.steps;
+  const dialog = step.buyerSees.bubbles.at(-1);
+  assert.deepEqual(dialog, { type: 'frame 7 dialog (code)', query: 'security', choices: SECURITY_CHOICES });
+  // The same choices as the clarify event in uiEvents.
+  assert.deepEqual(step.uiEvents.find((e) => e.type === 'clarify').choices.map((c) => c.label), dialog.choices);
+  const summary = summaryMarkdown([record], 'test');
+  assert.match(summary, new RegExp(`Frame 7 dialog: ${SECURITY_CHOICES.join(', ')}`));
+});
+
+test('runner, frame 7: after the buyer picks a choice, that turn shows no dialog', async () => {
+  const conversation = {
+    id: 'T7-choice', frame: '7', buyer: 'riley', start: { from: 'trigger bar' },
+    steps: [{ say: 'I need a security tool', expectedPaidRequests: 2 }, { choose: 'Firewall and VPN' }],
+  };
+  const api = fakeClaude([
+    useTool('search_products', { query: 'security' }),
+    say('9 products match "security". What do you need it for?'),
+  ]);
+  const record = await runConversation(conversation, api);
+  const [first, choice] = record.steps;
+  assert.equal(first.buyerSees.bubbles.at(-1).type, 'frame 7 dialog (code)');
+  assert.equal(choice.error, null);
+  assert.equal(choice.paidRequests, 0);
+  assert.ok(!choice.buyerSees.bubbles.some((b) => b.type === 'frame 7 dialog (code)'));
+  const summary = summaryMarkdown([record], 'test');
+  assert.equal(summary.match(/Frame 7 dialog:/g).length, 1);
+});
