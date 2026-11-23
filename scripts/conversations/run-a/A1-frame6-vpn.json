@@ -11,5 +11,39 @@
       "expectedPaidRequests": 2
     }
   ],
-  "lookFor": "1 search for VPN. Text names all 3 products with their status, no URL. List: Meshwire, Tunnelport Access Server (BYOL), Shalecrest UTM 9. No request prompt (2 products can be requested)."
+  "lookFor": "1 search for VPN. Text names all 3 products with their status, no URL. List: Meshwire, Tunnelport Access Server (BYOL), Shalecrest UTM 9. No request prompt (2 products can be requested).",
+  "checks": [
+    {
+      "type": "toolCallCount",
+      "tool": "search_products",
+      "count": 1
+    },
+    {
+      "type": "seesIncludes",
+      "text": [
+        "Meshwire",
+        "Tunnelport",
+        "Shalecrest"
+      ]
+    },
+    {
+      "type": "seesExcludes",
+      "text": [
+        "http",
+        "www.",
+        "/products/"
+      ]
+    },
+    {
+      "type": "listEquals",
+      "items": [
+        "Meshwire",
+        "Tunnelport Access Server (BYOL)",
+        "Shalecrest UTM 9"
+      ]
+    },
+    {
+      "type": "noPrompts"
+    }
+  ]
 }

@@ -14,5 +14,53 @@
       "choose": "Firewall and VPN"
     }
   ],
-  "lookFor": "\"I can only give short answers about products. Each product page has more details.\" 9 matches, so the frame 7 dialog. No table, no list of products, no hand-off. After the choice \"Firewall and VPN\": 0 paid requests, because code answers a choice. The List shows all 4 products in the Network firewall and Remote network access (VPN) categories, not only the products that matched \"security\". Products approved for Riley come first, then catalog order: Tunnelport Access Server (BYOL), Meshwire, Bastion NGFW VM, Shalecrest UTM 9. No frame 7 dialog after the choice."
+  "lookFor": "\"I can only give short answers about products. Each product page has more details.\" 9 matches, so the frame 7 dialog. No table, no list of products, no hand-off. After the choice \"Firewall and VPN\": 0 paid requests, because code answers a choice. The List shows all 4 products in the Network firewall and Remote network access (VPN) categories, not only the products that matched \"security\". Products approved for Riley come first, then catalog order: Tunnelport Access Server (BYOL), Meshwire, Bastion NGFW VM, Shalecrest UTM 9. No frame 7 dialog after the choice.",
+  "checks": [
+    {
+      "type": "seesIncludes",
+      "text": "I can only give short answers about products. Each product page has more details.",
+      "step": 1
+    },
+    {
+      "type": "bubbleShown",
+      "bubble": "frame 7 dialog (code)",
+      "step": 1
+    },
+    {
+      "type": "noList",
+      "step": 1
+    },
+    {
+      "type": "seesExcludes",
+      "text": [
+        "|"
+      ],
+      "step": 1
+    },
+    {
+      "type": "bubbleNotShown",
+      "bubble": "stacked (code)",
+      "step": 1
+    },
+    {
+      "type": "paidRequests",
+      "count": 0,
+      "step": 2
+    },
+    {
+      "type": "listEquals",
+      "items": [
+        "Tunnelport Access Server (BYOL)",
+        "Meshwire",
+        "Bastion NGFW VM",
+        "Shalecrest UTM 9"
+      ],
+      "step": 2
+    },
+    {
+      "type": "bubbleNotShown",
+      "bubble": "frame 7 dialog (code)",
+      "step": 2
+    }
+  ]
 }

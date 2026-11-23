@@ -11,5 +11,23 @@
       "expectedPaidRequests": 2
     }
   ],
-  "lookFor": "\"I can't see prices. You can find pricing for Watchtail Pro on its product page.\" No price, range or pricing model. List: Watchtail Pro."
+  "lookFor": "\"I can't see prices. You can find pricing for Watchtail Pro on its product page.\" No price, range or pricing model. List: Watchtail Pro.",
+  "checks": [
+    {
+      "type": "seesIncludes",
+      "text": "I can't see prices. You can find pricing for Watchtail Pro on its product page."
+    },
+    {
+      "type": "seesExcludes",
+      "text": [
+        "$"
+      ]
+    },
+    {
+      "type": "listEquals",
+      "items": [
+        "Watchtail Pro"
+      ]
+    }
+  ]
 }

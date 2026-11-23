@@ -11,5 +11,36 @@
       "expectedPaidRequests": 3
     }
   ],
-  "lookFor": "First sentence answers (Meshwire isn't approved). No approved alternatives. Claude's text stops there: no 'requests are turned off' and no hand-off line. Code adds the frame 17 stacked bubble (\"... To ask about it, speak with your administrator.\"). No contact bubble, no prompts, no 'experience'."
+  "lookFor": "First sentence answers (Meshwire isn't approved). No approved alternatives. Claude's text stops there: no 'requests are turned off' and no hand-off line. Code adds the frame 17 stacked bubble (\"... To ask about it, speak with your administrator.\"). No contact bubble, no prompts, no 'experience'.",
+  "checks": [
+    {
+      "type": "seesExcludes",
+      "text": [
+        "requests are turned off",
+        "speak with your administrator"
+      ]
+    },
+    {
+      "type": "noList"
+    },
+    {
+      "type": "bubbleShown",
+      "bubble": "stacked (code)",
+      "includes": "To ask about it, speak with your administrator."
+    },
+    {
+      "type": "bubbleNotShown",
+      "bubble": "contact (code)"
+    },
+    {
+      "type": "noPrompts"
+    },
+    {
+      "type": "seesExcludes",
+      "text": [
+        "experience"
+      ],
+      "from": "any"
+    }
+  ]
 }

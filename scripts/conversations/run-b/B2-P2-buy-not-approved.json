@@ -11,5 +11,30 @@
       "expectedPaidRequests": 3
     }
   ],
-  "lookFor": "First sentence \"I can't buy products for you.\" Then Meshwire isn't approved, the shared reason line, List Tunnelport Access Server (BYOL), prompt Request Meshwire. No request offer in the text."
+  "lookFor": "First sentence \"I can't buy products for you.\" Then Meshwire isn't approved, the shared reason line, List Tunnelport Access Server (BYOL), prompt Request Meshwire. No request offer in the text.",
+  "checks": [
+    {
+      "type": "textStartsWith",
+      "text": "I can't buy products for you."
+    },
+    {
+      "type": "toolCalled",
+      "tool": "search_products",
+      "input": {
+        "alternatives_for": "prod-rqccxbpo"
+      }
+    },
+    {
+      "type": "listEquals",
+      "items": [
+        "Tunnelport Access Server (BYOL)"
+      ]
+    },
+    {
+      "type": "promptsEqual",
+      "items": [
+        "Request Meshwire"
+      ]
+    }
+  ]
 }

@@ -14,5 +14,49 @@
       "card": "submit"
     }
   ],
-  "lookFor": "submit_request with the note and PO number, then the card (no text from Claude). Card note and PO filled. Submit: card Submitted, the sent line, record saved with no buyer name."
+  "lookFor": "submit_request with the note and PO number, then the card (no text from Claude). Card note and PO filled. Submit: card Submitted, the sent line, record saved with no buyer name.",
+  "checks": [
+    {
+      "type": "toolCalled",
+      "tool": "submit_request",
+      "input": {
+        "product_id": "prod-rqccxbpo",
+        "po_number": "4500012345"
+      }
+    },
+    {
+      "type": "bubbleNotShown",
+      "bubble": "text (Claude)",
+      "step": 1
+    },
+    {
+      "type": "cardHas",
+      "noteFilled": true,
+      "poNumber": "4500012345",
+      "step": 1
+    },
+    {
+      "type": "cardState",
+      "state": "submitted",
+      "step": 2
+    },
+    {
+      "type": "bubbleShown",
+      "bubble": "fixed (code)",
+      "includes": "I sent your request for Meshwire",
+      "step": 2
+    },
+    {
+      "type": "requestSaved",
+      "fields": [
+        "account_id",
+        "product_id",
+        "experience",
+        "note",
+        "po_number",
+        "date",
+        "status"
+      ]
+    }
+  ]
 }

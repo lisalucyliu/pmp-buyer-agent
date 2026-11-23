@@ -11,5 +11,33 @@
       "expectedPaidRequests": 2
     }
   ],
-  "lookFor": "search_products with alternatives_for, no new text search. 1 shared reason line, no reason for each product. List: Tunnelport Access Server (BYOL). Prompt: Request Meshwire."
+  "lookFor": "search_products with alternatives_for, no new text search. 1 shared reason line, no reason for each product. List: Tunnelport Access Server (BYOL). Prompt: Request Meshwire.",
+  "checks": [
+    {
+      "type": "toolCalled",
+      "tool": "search_products",
+      "input": {
+        "alternatives_for": "prod-rqccxbpo"
+      }
+    },
+    {
+      "type": "toolNotCalled",
+      "tool": "search_products",
+      "input": {
+        "alternatives_for": null
+      }
+    },
+    {
+      "type": "listEquals",
+      "items": [
+        "Tunnelport Access Server (BYOL)"
+      ]
+    },
+    {
+      "type": "promptsEqual",
+      "items": [
+        "Request Meshwire"
+      ]
+    }
+  ]
 }

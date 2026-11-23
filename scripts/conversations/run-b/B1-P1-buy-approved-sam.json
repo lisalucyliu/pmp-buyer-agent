@@ -11,5 +11,15 @@
       "expectedPaidRequests": 2
     }
   ],
-  "lookFor": "First sentence is exactly \"I can't buy products for you.\" Approved for Sam. No hand-off (approved)."
+  "lookFor": "First sentence is exactly \"I can't buy products for you.\" Approved for Sam. No hand-off (approved).",
+  "checks": [
+    {
+      "type": "textStartsWith",
+      "text": "I can't buy products for you."
+    },
+    {
+      "type": "bubbleNotShown",
+      "bubble": "stacked (code)"
+    }
+  ]
 }

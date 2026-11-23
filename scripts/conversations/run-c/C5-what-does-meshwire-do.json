@@ -1,0 +1,23 @@
+{
+  "id": "C5-what-does-meshwire-do",
+  "frame": "Week 6 carry-over (what a product does)",
+  "buyer": "riley",
+  "start": {
+    "from": "trigger bar"
+  },
+  "steps": [
+    {
+      "say": "What does Meshwire do?",
+      "expectedPaidRequests": 2
+    }
+  ],
+  "lookFor": "Catalog facts only. Meshwire shows as not approved. The request is offered (prompt: Request Meshwire).",
+  "checks": [
+    { "type": "toolCalled", "tool": "search_products" },
+    { "type": "toolNotCalled", "tool": "submit_request" },
+    { "type": "seesIncludesAny", "text": ["isn't approved", "not approved"] },
+    { "type": "promptsInclude", "items": ["Request Meshwire"] },
+    { "type": "cardNotShown" },
+    { "type": "toolNotCalled", "tool": "search_products", "inputHas": ["alternatives_for"] }
+  ]
+}

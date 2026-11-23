@@ -11,5 +11,28 @@
       "expectedPaidRequests": 3
     }
   ],
-  "lookFor": "Watchtail Pro isn't approved for Sam. No approved alternatives. Claude's text stops there. Code adds the frame 17 stacked bubble with \"speak with your administrator.\" No contact bubble, no prompts."
+  "lookFor": "Watchtail Pro isn't approved for Sam. No approved alternatives. Claude's text stops there. Code adds the frame 17 stacked bubble with \"speak with your administrator.\" No contact bubble, no prompts.",
+  "checks": [
+    {
+      "type": "noList"
+    },
+    {
+      "type": "seesExcludes",
+      "text": [
+        "speak with your administrator"
+      ]
+    },
+    {
+      "type": "bubbleShown",
+      "bubble": "stacked (code)",
+      "includes": "speak with your administrator."
+    },
+    {
+      "type": "bubbleNotShown",
+      "bubble": "contact (code)"
+    },
+    {
+      "type": "noPrompts"
+    }
+  ]
 }

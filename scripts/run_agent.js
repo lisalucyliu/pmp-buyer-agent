@@ -4,6 +4,8 @@
 //   node scripts/run_agent.js --run a --dry-run        print the plan and the paid request count, 0 calls
 //   node scripts/run_agent.js --run a --label run-a    run it (needs ANTHROPIC_API_KEY in .env.local)
 //   add --only A1,A3 to run some conversations only
+//   --run takes a list: --run a,b,c runs all 15 cases into one folder. For pass^3 (Week 7), run it
+//   3 times with 3 labels, then grade with scripts/grade_runs.js.
 //
 // Each buyer message goes through runAgentTurn in api/agent.js: the same request builder and the same
 // tool code as the app. Card buttons run the browser's code (src/drawer/conversationLogic.js) with no
@@ -13,7 +15,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { pathToFileURL } from 'node:url';
 import sampleRequests from '../data/sampleRequests.json' with { type: 'json' };
 import { MAX_CALLS_PER_TURN, claudeClient, runAgentTurn } from '../api/agent.js';
-import { experienceFor, findBuyer, findProduct } from '../shared/catalog.js';
+import { PRODUCTS, experienceFor, findBuyer, findProduct } from '../shared/catalog.js';
 import { COPY, lines } from '../shared/copy.js';
 import { errorTypeForError } from '../server/errors.js';
 import { SYSTEM_PROMPT } from '../server/prompt.js';
@@ -49,6 +51,23 @@ export function planOf(conversation) {
   const expected = conversation.steps.reduce((sum, step) => sum + (step.say ? step.expectedPaidRequests : 0), 0);
   const most = conversation.steps.filter((step) => step.say).length * MAX_CALLS_PER_TURN;
   return { expected, most };
+}
+
+// Test-only products (Week 7, C2). A case file can list "testProducts". The runner adds them to the
+// catalog in memory for that one case and removes them after it, also after an error. The app, the
+// API and data/catalog.json never hold them (tests/unit/evals.test.js).
+export async function withTestProducts(products = [], run) {
+  const taken = products.filter((p) => findProduct(p.product_id));
+  if (taken.length) throw new Error(`Test product ID already in the catalog: ${taken.map((p) => p.product_id).join(', ')}`);
+  PRODUCTS.push(...products);
+  try {
+    return await run();
+  } finally {
+    for (const product of products) {
+      const index = PRODUCTS.findIndex((p) => p.product_id === product.product_id);
+      if (index !== -1) PRODUCTS.splice(index, 1);
+    }
+  }
 }
 
 export function readConversations(run) {
@@ -211,7 +230,11 @@ function savedCall(call) {
   };
 }
 
-export async function runConversation(conversation, api) {
+export function runConversation(conversation, api) {
+  return withTestProducts(conversation.testProducts, () => runConversationSteps(conversation, api));
+}
+
+async function runConversationSteps(conversation, api) {
   const session = new Session(conversation);
   const steps = [];
   for (const step of conversation.steps) {
@@ -243,6 +266,8 @@ export async function runConversation(conversation, api) {
     buyer: conversation.buyer,
     start: conversation.start,
     lookFor: conversation.lookFor ?? null,
+    checks: conversation.checks ?? null,
+    testProducts: conversation.testProducts ?? null,
     systemPrompt: SYSTEM_PROMPT,
     tools: TOOLS,
     steps,
@@ -255,6 +280,27 @@ export async function runConversation(conversation, api) {
 
 const cell = (value) => String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, '<br>');
 
+// One bubble as text. Code text is labeled, for example "Text (code):", so Lisa can see who wrote it.
+export function bubbleText(b) {
+  if (b.choices) return `Frame 7 dialog: ${b.choices.join(', ')}`;
+  if (b.type === 'text (code)') return `Text (code): ${b.text}`;
+  if (b.type === 'stacked (code)') return `Stacked (code): ${b.text}`;
+  return b.text ?? (b.items ? `List: ${b.items.join(', ')}` : b.heading ?? b.type);
+}
+
+// What the buyer sees in a record: the bubbles of each step, steps split by " // ".
+// withPrompts adds the support prompts (grades.md uses it).
+export function seesText(record, { withPrompts = false } = {}) {
+  return record.steps
+    .map((s) => {
+      if (!s.buyerSees) return s.card ? `Card: ${s.cardState}` : '';
+      const prompts = withPrompts && s.buyerSees.prompts.length ? [`Prompts: ${s.buyerSees.prompts.join(', ')}`] : [];
+      return [...s.buyerSees.bubbles.map(bubbleText), ...prompts].join(' / ');
+    })
+    .filter(Boolean)
+    .join(' // ');
+}
+
 export function summaryMarkdown(records, label) {
   const total = records.reduce((sum, r) => sum + r.costUsd, 0);
   const paid = records.reduce((sum, r) => sum + r.paidRequests, 0);
@@ -262,16 +308,7 @@ export function summaryMarkdown(records, label) {
   const rows = records.map((r) => {
     const said = r.steps.filter((s) => s.say || s.choose);
     const tools = said.flatMap((s) => (s.calls ?? []).flatMap((c) => c.toolCalls.map((t) => t.name + (t.input?.alternatives_for ? ' (alternatives)' : '')))).join(', ');
-    const bubbleText = (b) => {
-      if (b.choices) return `Frame 7 dialog: ${b.choices.join(', ')}`;
-      if (b.type === 'text (code)') return `Text (code): ${b.text}`;
-      if (b.type === 'stacked (code)') return `Stacked (code): ${b.text}`;
-      return b.text ?? (b.items ? `List: ${b.items.join(', ')}` : b.heading ?? b.type);
-    };
-    const sees = r.steps
-      .map((s) => s.buyerSees?.bubbles.map(bubbleText).join(' / ') ?? (s.card ? `Card: ${s.cardState}` : ''))
-      .filter(Boolean)
-      .join(' // ');
+    const sees = seesText(r);
     const errors = r.steps.map((s) => s.error?.message ?? s.error).filter(Boolean).join('; ');
     // Which model wrote each answer. A fallback answer is named as one (Q6).
     const allCalls = said.flatMap((s) => s.calls ?? []);
@@ -319,18 +356,36 @@ export function dryRunText(run, conversations) {
   return out.join('\n');
 }
 
+// Dry run for a list of runs (--run a,b,c): each run's plan, then the total for 1 time and for 3 times.
+export function dryRunListText(runs, conversationsByRun) {
+  const parts = runs.map((run) => dryRunText(run, conversationsByRun[run]));
+  if (runs.length === 1) return parts[0];
+  const all = runs.flatMap((run) => conversationsByRun[run]);
+  const expected = all.reduce((sum, c) => sum + planOf(c).expected, 0);
+  const most = all.reduce((sum, c) => sum + planOf(c).most, 0);
+  const name = runs.map((r) => r.toUpperCase()).join(', ');
+  return [
+    parts.join('\n\n'),
+    '',
+    `Total for runs ${name}, 1 time: ${all.length} conversations, ${expected} paid requests expected, ${most} at most.`,
+    `Total for 3 times (pass^3): ${expected * 3} paid requests expected, ${most * 3} at most.`,
+  ].join('\n');
+}
+
 async function main() {
   const run = argument('run');
-  if (!run) throw new Error('Use: node scripts/run_agent.js --run a|b [--dry-run] [--label name] [--only A1,A2]');
+  if (!run) throw new Error('Use: node scripts/run_agent.js --run a|b|c or a,b,c [--dry-run] [--label name] [--only A1,A2]');
+  const runs = run.split(',').map((r) => r.trim()).filter(Boolean);
   const only = argument('only')?.split(',');
-  const conversations = readConversations(run).filter((c) => !only || only.some((id) => c.id.startsWith(id)));
+  const byRun = Object.fromEntries(runs.map((r) => [r, readConversations(r).filter((c) => !only || only.some((id) => c.id.startsWith(id)))]));
+  const conversations = runs.flatMap((r) => byRun[r]);
   if (!conversations.length) throw new Error('No conversations match');
 
   if (process.argv.includes('--dry-run')) {
-    console.log(dryRunText(run, conversations));
+    console.log(dryRunListText(runs, byRun));
     return;
   }
-  const label = argument('label') ?? `run-${run}`;
+  const label = argument('label') ?? `run-${runs.join('')}`;
   const date = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
   const folder = new URL(`${date}-${label}/`, RUNS);
   const taken = conversations.filter((c) => existsSync(new URL(`${c.id}.json`, folder)));
@@ -338,7 +393,7 @@ async function main() {
   mkdirSync(folder, { recursive: true });
 
   const plan = conversations.reduce((sum, c) => sum + planOf(c).expected, 0);
-  console.log(`Run ${run.toUpperCase()}: ${conversations.length} conversations, about ${plan} paid requests.`);
+  console.log(`Run ${runs.map((r) => r.toUpperCase()).join(', ')}: ${conversations.length} conversations, about ${plan} paid requests.`);
   const api = claudeClient();
   const records = [];
   for (const conversation of conversations) {

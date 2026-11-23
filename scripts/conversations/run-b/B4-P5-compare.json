@@ -11,5 +11,27 @@
       "expectedPaidRequests": 2
     }
   ],
-  "lookFor": "At most 3 short sentences, catalog facts only, no recommendation. List: Watchtail Pro, Watchtail Enterprise. Prompt: Request Watchtail Enterprise."
+  "lookFor": "At most 3 short sentences, catalog facts only, no recommendation. List: Watchtail Pro, Watchtail Enterprise. Prompt: Request Watchtail Enterprise. Lisa hand-grades: approval wording (approved in vs approved for purchase) and whether the List order makes sense next to the text.",
+  "checks": [
+    {
+      "type": "listIncludes",
+      "items": [
+        "Watchtail Pro",
+        "Watchtail Enterprise"
+      ]
+    },
+    {
+      "type": "toolNotCalled",
+      "tool": "submit_request"
+    },
+    {
+      "type": "cardNotShown"
+    },
+    {
+      "type": "promptsInclude",
+      "items": [
+        "Request Watchtail Enterprise"
+      ]
+    }
+  ]
 }

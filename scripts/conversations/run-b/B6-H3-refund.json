@@ -11,5 +11,25 @@
       "expectedPaidRequests": 1
     }
   ],
-  "lookFor": "No tool call (the app note gives Contact details: yes). \"I can't help with refunds. Contact your administrator.\" Only that. Contact bubble from code. No step line, no prompts."
+  "lookFor": "No tool call (the app note gives Contact details: yes). \"I can't help with refunds. Contact your administrator.\" Only that. Contact bubble from code. No step line, no prompts.",
+  "checks": [
+    {
+      "type": "toolCallCount",
+      "count": 0
+    },
+    {
+      "type": "textEquals",
+      "text": "I can't help with refunds. Contact your administrator."
+    },
+    {
+      "type": "bubbleShown",
+      "bubble": "contact (code)"
+    },
+    {
+      "type": "noStepLine"
+    },
+    {
+      "type": "noPrompts"
+    }
+  ]
 }
