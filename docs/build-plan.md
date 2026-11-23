@@ -143,7 +143,7 @@ Line numbers are in `~/pmp-tiny-agent/tiny_agent.py`. Before I write the new pro
 | S10 | Requests-off rule: the first sentence answers the question (it no longer has to say requests are off). Order: answer, alternatives, then the hand-off line. Remove the line about product links in the message to the administrator, and the docs link sentences. Make it shorter. | decision 91, row 5 | 98 to 105 |
 | S11 | Example 2: remove "Finance experience", both `<link>`s, the docs link and "Want me to check what's already approved for Finance?". End with the hand-off line "To ask about it, speak with your administrator." | decisions 22, 24, 91 | 107 to 114 |
 | S12 | New rule: for any request to buy, the first sentence is "I can't buy products for you." | row 7 (P1, P2) | new |
-| S13 | New rule: never give a price, a price range or a pricing model, even if asked again. Say "I can't see prices." and point to the product page. | row 7 (P3) | new |
+| S13 | New rule: never give a price, a price range or a pricing model, even if asked again. Say "I can't give you prices." and point to the product page. | row 7 (P3) | new |
 | S14 | New rule: P5 (simple questions) limits. At most 3 short sentences, catalog facts from tool results only, no recommendation, at most 5 products. A fact the catalog doesn't have gets "I don't have details about that." | row 7 (P5) | new |
 | S15 | New rule: too-big request copy: "I can only give short answers about products. Each product page has more details." | decision 112 | new |
 | S16 | New rule: hand-off endings. If the tool result says contact details: yes, end with "contact your administrator." If no, end with "speak with your administrator." Never write an email or channel. | decision 87, row 5 | new |

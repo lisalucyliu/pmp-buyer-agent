@@ -1,8 +1,9 @@
 // Which products get a List item after a response, and when a "Request <product>" support prompt shows.
 // Code decides both. Claude doesn't choose them (build plan section 2, step 5).
-import { STATUS, statusFor } from './catalog.js';
+import { findAlternatives } from './alternatives.js';
+import { PRODUCTS, STATUS, statusFor } from './catalog.js';
 import { hasContacts } from './contacts.js';
-import { lines } from './copy.js';
+import { COPY, lines } from './copy.js';
 import { canRequest } from './requestChecks.js';
 
 function escapeRegExp(text) {
@@ -84,6 +85,37 @@ export function requestPromptProduct({ text, searchResults = [], alternativesSub
   const requestable = inAnswer.filter((product) =>
     canRequest({ productId: product.product_id, buyer, experience, requests, products }));
   return requestable.length === 1 ? requestable[0] : null;
+}
+
+// The price sentence Claude must write (S13). Code uses it to know that the buyer asked about price.
+export const PRICE_ANSWER = "I can't give you prices.";
+
+// Week 7, C5 (Lisa, Nov 22): the "Show approved alternatives" prompt, next to the request prompt, so the
+// buyer chooses the next step. It shows only when all of these are true:
+//   - the "Request <product>" prompt shows for that product (so never after a hand-off, decision 58)
+//   - this turn's search found exactly 1 product, and it is not approved
+//   - no alternatives_for search ran this turn
+//   - alternatives were not shown or declined before in this conversation
+//   - the answer is not a price answer (frame 25, open question 1, decided Nov 15: 1 prompt is enough)
+//   - at least 1 approved product in the buyer's Private Marketplace is in the same category
+// Code checks the catalog. No Claude call.
+export function alternativesPromptShows({ text, searchResults = [], alternatives = null, requestProduct, flags = {}, experience, products = PRODUCTS }) {
+  if (!requestProduct || alternatives) return false;
+  if (flags.alternativesShown || flags.alternativesDeclined) return false;
+  if (String(text ?? '').includes(PRICE_ANSWER)) return false;
+  const found = searchResults.filter((p, i) => searchResults.findIndex((q) => q.product_id === p.product_id) === i);
+  if (found.length !== 1 || found[0].product_id !== requestProduct.product_id) return false;
+  if (statusFor(found[0], experience.id) === STATUS.APPROVED) return false;
+  return findAlternatives(found[0], experience.id, products).total > 0;
+}
+
+// The support prompt items after an answer: the request prompt first, then "Show approved alternatives"
+// (Lisa, Nov 22: request first). The same id and text as frame 5, so a click works as in A2.
+export function answerPromptItems(requestProduct, showAlternatives) {
+  return [
+    { id: `request:${requestProduct.product_id}`, text: lines.requestPrompt(requestProduct.name) },
+    ...(showAlternatives ? [{ id: 'show-alternatives', text: COPY.showAlternatives }] : []),
+  ];
 }
 
 // Products that get a code-written hand-off bubble after Claude's text (Lisa's answers, Nov 16, step 2

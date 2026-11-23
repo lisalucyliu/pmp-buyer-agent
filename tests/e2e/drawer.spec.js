@@ -406,7 +406,7 @@ test.describe('Row 7: links and plain text', () => {
     await page.goto(url('/'));
     await openFromTrigger(page);
     await ask(page, 'How much does Watchtail Pro cost?');
-    await expect(drawer(page)).toContainText("I can't see prices. You can find pricing for Watchtail Pro on its product page.");
+    await expect(drawer(page)).toContainText("I can't give you prices. You can find pricing for Watchtail Pro on its product page.");
     await ask(page, "What's the difference between Watchtail Pro and Watchtail Enterprise?");
     await expect(drawer(page)).toContainText('Watchtail Pro is approved for purchase in your Private Marketplace, and Watchtail Enterprise isn\'t.');
     await expect(page.getByRole('menuitem')).toHaveText(['Request Watchtail Enterprise']);

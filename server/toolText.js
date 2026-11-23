@@ -48,8 +48,10 @@ export const SEARCH_NO_REQUEST_OFFER =
 // product that isn't approved. Fix 7 (Lisa, Nov 17), from run-b2 B7: the same with requests off.
 // Only for a text search with exactly 1 product that isn't approved (this includes a product that
 // can't be requested), before alternatives were shown or declined.
+// Week 7, C5 (Lisa, Nov 22): "or about what a product does" added, to match decision 175 (fix 6) in the
+// search_products description. Code shows the "Show approved alternatives" prompt (shared/answerProducts.js).
 export const nextAlternativesText = (productId) =>
-  `Next, call search_products with alternatives_for set to ${productId}, unless the buyer asked about price.`;
+  `Next, call search_products with alternatives_for set to ${productId}, unless the buyer asked about price or about what a product does.`;
 
 function alternativesNext(result, experience, flags) {
   if (result.needsClarify || result.total !== 1 || result.shown.length !== 1) return null;

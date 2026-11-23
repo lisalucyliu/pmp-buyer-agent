@@ -72,6 +72,7 @@ Before you rewrite the system prompt, use the few-shot-patterns skill from the p
 - Hard end: Wed Nov 18. If time runs out, motion goes to the parking lot first, then Supabase.
 - Until Supabase, requests live in the browser session only. The README says so (decision 79).
 - Parking lot, do not build: card expiry (decision 70), output label, stop and regenerate buttons (decisions 95, 98).
+- Parking lot, considered, not built (Lisa, Nov 22, Week 7, C2 option C): a fixed notice from code when a product description has instructions for the assistant. Lisa chose option B (system prompt rule S22) to keep the agent focused on its main job, not threat analysis.
 - Still open: Supabase save error types (frame 12 stays "connection error" for now).
 
 ## README items (collect as you build)

@@ -11,12 +11,12 @@
       "expectedPaidRequests": 2
     }
   ],
-  "lookFor": "Catalog facts only. Meshwire shows as not approved. The request is offered (prompt: Request Meshwire).",
+  "lookFor": "Catalog facts only. Meshwire shows as not approved. The buyer chooses the next step (prompts: Request Meshwire, Show approved alternatives). No alternatives search.",
   "checks": [
     { "type": "toolCalled", "tool": "search_products" },
     { "type": "toolNotCalled", "tool": "submit_request" },
     { "type": "seesIncludesAny", "text": ["isn't approved", "not approved"] },
-    { "type": "promptsInclude", "items": ["Request Meshwire"] },
+    { "type": "promptsInclude", "items": ["Request Meshwire", "Show approved alternatives"] },
     { "type": "cardNotShown" },
     { "type": "toolNotCalled", "tool": "search_products", "inputHas": ["alternatives_for"] }
   ]

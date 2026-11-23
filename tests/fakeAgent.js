@@ -28,7 +28,7 @@ import { clarifyChoices } from '../shared/clarify.js';
 import { findContacts, hasContacts } from '../shared/contacts.js';
 import { COPY, lines } from '../shared/copy.js';
 import { ERROR_TYPE } from '../shared/errorTypes.js';
-import { handOffLine, listForTurn, namedProducts, requestPromptProduct } from '../shared/answerProducts.js';
+import { alternativesPromptShows, answerPromptItems, handOffLine, listForTurn, namedProducts, requestPromptProduct } from '../shared/answerProducts.js';
 import { hasNote } from '../shared/productRequest.js';
 import { CHECK, checkRequest } from '../shared/requestChecks.js';
 import { searchProducts } from '../shared/search.js';
@@ -168,7 +168,15 @@ class Turn {
       handOff: this.handOff,
     });
     if (product) {
-      this.emit({ type: 'prompts', alignment: 'vertical', editable: false, items: [{ id: `request:${product.product_id}`, text: lines.requestPrompt(product.name) }] });
+      const showAlternatives = alternativesPromptShows({
+        text: this.text,
+        searchResults: this.searchResults,
+        alternatives: this.alternatives,
+        requestProduct: product,
+        flags: this.ctx.flags,
+        experience: this.ctx.experience,
+      });
+      this.emit({ type: 'prompts', alignment: 'vertical', editable: false, items: answerPromptItems(product, showAlternatives) });
     }
   }
 
@@ -447,7 +455,7 @@ export function fakeAgentEvents(body, { stepDelayMs = 0, tokenDelayMs = 0 } = {}
     const product = byExactName(price[1]) ?? result.shown[0];
     if (product) {
       const approved = isApproved(product, experience.id);
-      turn.say(`I can't see prices. You can find pricing for ${product.name} on its product page.${approved ? '' : ` ${product.name} isn't approved for purchase in your Private Marketplace.`}`);
+      turn.say(`I can't give you prices. You can find pricing for ${product.name} on its product page.${approved ? '' : ` ${product.name} isn't approved for purchase in your Private Marketplace.`}`);
       turn.codeList();
       if (!approved && !experience.requests_enabled) {
         turn.stacked(lines.handOffRequestsOff(product.name, turn.ctx.contactsYes), { handOff: true });
@@ -456,7 +464,7 @@ export function fakeAgentEvents(body, { stepDelayMs = 0, tokenDelayMs = 0 } = {}
         turn.requestPrompt();
       }
     } else {
-      turn.say("I can't see prices.");
+      turn.say("I can't give you prices.");
     }
     return turn.done();
   }

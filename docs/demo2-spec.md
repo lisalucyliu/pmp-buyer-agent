@@ -591,11 +591,11 @@ Outgoing bubble: "How much does Watchtail Pro cost?"
 
 Step line: collapsed. Step: "Searched products. 1 matched."
 
-Incoming bubble: "I can't see prices. You can find pricing for Watchtail Pro on its product page."
+Incoming bubble: "I can't give you prices. You can find pricing for Watchtail Pro on its product page."
 
 Stacked bubble: List with 1 item (Watchtail Pro, purple badge).
 
-Not approved (Riley, Meshwire): "I can't see prices. You can find pricing for Meshwire on its product page. Meshwire isn't approved for purchase in your Private Marketplace." Then the List item (no badge). Riley gets 1 non-editable support prompt, "Request Meshwire". Sam gets the frame 17 hand-off line, with no prompt (decided Nov 15, open question 1).
+Not approved (Riley, Meshwire): "I can't give you prices. You can find pricing for Meshwire on its product page. Meshwire isn't approved for purchase in your Private Marketplace." Then the List item (no badge). Riley gets 1 non-editable support prompt, "Request Meshwire". Sam gets the frame 17 hand-off line, with no prompt (decided Nov 15, open question 1).
 
 The agent never gives a price, a price range or a pricing model, even if the buyer asks again.
 

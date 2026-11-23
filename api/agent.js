@@ -8,7 +8,7 @@ import { choiceAnswer } from '../shared/choiceAnswer.js';
 import { clarifyChoices } from '../shared/clarify.js';
 import { findContacts, hasContacts } from '../shared/contacts.js';
 import { COPY, lines } from '../shared/copy.js';
-import { handOffLine, handOffProducts, listForTurn, requestPromptProduct } from '../shared/answerProducts.js';
+import { alternativesPromptShows, answerPromptItems, handOffLine, handOffProducts, listForTurn, requestPromptProduct } from '../shared/answerProducts.js';
 import { UnusableResponseError, errorTypeForError } from '../server/errors.js';
 import { buildMessages, readBody } from '../server/messages.js';
 import { SYSTEM_PROMPT } from '../server/prompt.js';
@@ -121,7 +121,16 @@ function afterText({ text, turn, ctx, send, listLoading }) {
     handOff,
   });
   if (product) {
-    send({ type: 'prompts', alignment: 'vertical', editable: false, items: [{ id: `request:${product.product_id}`, text: lines.requestPrompt(product.name) }] });
+    // Week 7, C5 (Lisa, Nov 22): "Show approved alternatives" next to the request prompt.
+    const showAlternatives = alternativesPromptShows({
+      text,
+      searchResults: turn.searchResults,
+      alternatives: turn.alternatives,
+      requestProduct: product,
+      flags: ctx.flags,
+      experience: ctx.experience,
+    });
+    send({ type: 'prompts', alignment: 'vertical', editable: false, items: answerPromptItems(product, showAlternatives) });
   }
 }
 
