@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { PRODUCTS } from '../../shared/catalog.js';
 import { COPY } from '../../shared/copy.js';
 import { CHECK_TYPES, checkLabel, runChecks } from '../../scripts/checks.js';
-import { gradesMarkdown, parseGrades, readCases, scoreGrades, scoreText, splitRow } from '../../scripts/grade_runs.js';
+import { gradesMarkdown, parseGrades, readCases, readGradeNotes, readingMarkdown, scoreGrades, scoreText, splitRow } from '../../scripts/grade_runs.js';
 import { dryRunListText, planOf, readConversations, runConversation, withTestProducts } from '../../scripts/run_agent.js';
 import { fakeClaude, say, useTool } from '../fakeClaude.js';
 
@@ -219,4 +219,18 @@ test('pass^3 score: fewer than 3 runs never passes', () => {
   const score = scoreGrades([{ caseId: 'A1', run: 'r1', code: 'Pass', lisa: 'Pass' }, { caseId: 'A1', run: 'r2', code: 'Pass', lisa: 'Pass' }]);
   assert.equal(score.passed, 0);
   assert.match(scoreText(score), /Fewer than 3 runs/);
+});
+
+test('grades-read.md: grouped by case, lookFor and You grade once, each run as a quote, failed checks named', () => {
+  const notes = readGradeNotes('## A9 (a test case)\n\nCode checks:\n\nYou grade: the tone.\n\n## Open points\n\nYou grade: not this one.');
+  assert.deepEqual(notes, { A9: { title: 'a test case', youGrade: 'the tone.' } });
+  const cases = { 'A9-test': { id: 'A9-test', lookFor: 'List: Meshwire.', checks: [{ type: 'listEquals', items: ['Meshwire'] }] } };
+  const record = (items) => ({ id: 'A9-test', steps: [{ say: 'Hi', calls: [], buyerSees: { steps: [], bubbles: [{ type: 'text (Claude)', text: 'Hello.' }, { type: 'list (code)', items }], prompts: ['Request Meshwire'] } }] });
+  const runs = [{ name: 'r1', records: [record(['Meshwire'])] }, { name: 'r2', records: [record(['Tunnelport'])] }];
+  const md = readingMarkdown(runs, cases, 'test', notes);
+  assert.equal(md.match(/^## A9 \(a test case\)$/gm).length, 1);
+  assert.equal(md.match(/\*\*You grade:\*\* the tone\./g).length, 1);
+  assert.match(md, /### Run 1 \(r1\): code checks Pass \(1 of 1\)/);
+  assert.match(md, /> \*\*Step 1\.\*\* Buyer: "Hi"\n>\n> Hello\.\n>\n> List: Tunnelport\n>\n> Prompts: Request Meshwire/);
+  assert.match(md, /### Run 2 \(r2\): code checks Fail \(0 of 1\)\n[\s\S]*Failed checks:\n\n- List is exactly, in this order: Meshwire/);
 });

@@ -4,6 +4,9 @@
 //   node scripts/grade_runs.js runs/2026-11-23-evals-1 runs/2026-11-23-evals-2 runs/2026-11-23-evals-3
 //   Writes runs/<date>-evals/grades.md: one row per case per run, with the code checks filled in and
 //   2 empty columns for Lisa. It never writes over a grades.md that exists (Lisa's grades are in it).
+//   Also writes grades-read.md in the same folder: a reading view grouped by case (Lisa, Nov 22).
+//   --out <folder> writes both files to that folder instead, for example:
+//   node scripts/grade_runs.js --out runs/2026-11-22-after runs/2026-11-22-after-1 runs/2026-11-22-after-2 runs/2026-11-22-after-3
 //
 // Mode 2, score the table after Lisa fills it:
 //   node scripts/grade_runs.js --score runs/2026-11-23-evals/grades.md
@@ -15,7 +18,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runChecks } from './checks.js';
-import { readConversations, seesText } from './run_agent.js';
+import { bubbleText, readConversations, seesText } from './run_agent.js';
 
 export const MIN_RUNS = 3;
 export const COLUMNS = ['Case', 'Run', 'What the buyer sees', 'lookFor', 'Code checks', 'All code checks', 'Lisa: Pass or Fail', 'Lisa: why'];
@@ -68,6 +71,68 @@ export function gradesMarkdown(runs, cases, title) {
 }
 
 // Splits a table line into cells. "\|" inside a cell is text, not a cell border.
+// The "You grade" line of each case, from docs/evals-week-7-checks.md, by short ID (A1, B4, ...).
+// Also the heading words in parentheses, for example "A1 (VPN search)".
+export function readGradeNotes(markdown) {
+  const notes = {};
+  let current = null;
+  for (const line of markdown.split('\n')) {
+    const heading = line.match(/^## ([A-C]\d+) \((.+)\)\s*$/);
+    if (heading) {
+      current = heading[1];
+      notes[current] = { title: heading[2], youGrade: '' };
+      continue;
+    }
+    if (line.startsWith('## ')) current = null;
+    if (current && line.startsWith('You grade:')) notes[current].youGrade = line.slice('You grade:'.length).trim();
+  }
+  return notes;
+}
+
+const shortId = (id) => id.split('-')[0];
+
+// Quote lines for one record: each step's buyer message, then each bubble, the List and the Prompts
+// on separate lines.
+function recordQuote(record) {
+  const out = [];
+  record.steps.forEach((s, i) => {
+    const said = s.say ? `Buyer: "${s.say}"` : s.choose ? `Buyer chooses: "${s.choose}"` : null;
+    const parts = [
+      ...(said ? [`**Step ${i + 1}.** ${said}`] : [`**Step ${i + 1}.**`]),
+      ...(s.buyerSees ? s.buyerSees.bubbles.map(bubbleText) : s.card ? [`Card: ${s.cardState}`] : []),
+      ...(s.buyerSees?.prompts?.length ? [`Prompts: ${s.buyerSees.prompts.join(', ')}`] : []),
+      ...(s.error ? [`Error: ${s.error?.message ?? s.error}`] : []),
+    ];
+    out.push(...parts);
+  });
+  return out.map((line) => `> ${String(line).replace(/\n/g, ' ')}`).join('\n>\n');
+}
+
+// grades-read.md: a reading view grouped by case. Heading per case, the lookFor and "You grade" lines
+// once, then each run as a quote, and the failed checks under each run that failed.
+export function readingMarkdown(runs, cases, title, notes = {}) {
+  const ids = [...new Set(runs.flatMap((r) => r.records.map((rec) => rec.id)))].sort();
+  const out = [`# ${title}: reading view`, '', `${runs.length} runs: ${runs.map((r) => r.name).join(', ')}. Grouped by case. Grade in grades.md.`];
+  for (const id of ids) {
+    const note = notes[shortId(id)] ?? {};
+    const theCase = cases[id];
+    out.push('', `## ${shortId(id)}${note.title ? ` (${note.title})` : ''}`, '', `Case file: ${id}`, '');
+    out.push(`**lookFor:** ${theCase?.lookFor ?? '-'}`, '', `**You grade:** ${note.youGrade || '-'}`);
+    runs.forEach((run, i) => {
+      const record = run.records.find((rec) => rec.id === id);
+      if (!record) {
+        out.push('', `### Run ${i + 1} (${run.name}): no record`);
+        return;
+      }
+      const checks = runChecks(record, theCase?.checks ?? []);
+      const failed = checks.filter((c) => !c.pass);
+      out.push('', `### Run ${i + 1} (${run.name}): code checks ${failed.length ? 'Fail' : 'Pass'} (${checks.length - failed.length} of ${checks.length})`, '', recordQuote(record));
+      if (failed.length) out.push('', 'Failed checks:', '', ...failed.map((c) => `- ${c.label}`));
+    });
+  }
+  return `${out.join('\n')}\n`;
+}
+
 export function splitRow(line) {
   const inner = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   const cells = [];
@@ -154,15 +219,26 @@ function main() {
     console.log(scoreText(scoreGrades(parseGrades(readFileSync(args[1], 'utf8')))));
     return;
   }
-  if (args.length < MIN_RUNS) throw new Error(`Give ${MIN_RUNS} or more run folders. Use: node scripts/grade_runs.js runs/<run 1> runs/<run 2> runs/<run 3>`);
-  const runs = args.map((folder) => ({ name: basename(resolve(folder)), records: readRunFolder(folder) }));
+  const outIndex = args.indexOf('--out');
+  const outArg = outIndex === -1 ? null : args[outIndex + 1];
+  if (outIndex !== -1 && !outArg) throw new Error('Use: --out runs/<folder>');
+  const folders = outIndex === -1 ? args : args.filter((_, i) => i !== outIndex && i !== outIndex + 1);
+  if (folders.length < MIN_RUNS) throw new Error(`Give ${MIN_RUNS} or more run folders. Use: node scripts/grade_runs.js [--out runs/<folder>] runs/<run 1> runs/<run 2> runs/<run 3>`);
+  const runs = folders.map((folder) => ({ name: basename(resolve(folder)), records: readRunFolder(folder) }));
   const date = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
-  const outFolder = new URL(`../runs/${date}-evals/`, import.meta.url);
-  const outFile = new URL('grades.md', outFolder);
-  if (existsSync(outFile)) throw new Error(`runs/${date}-evals/grades.md already exists. It can hold Lisa's grades, so it is not written over. Move it first.`);
+  const outFolder = outArg ? resolve(outArg) : resolve(new URL(`../runs/${date}-evals/`, import.meta.url).pathname);
+  const shown = outArg ?? `runs/${date}-evals`;
+  const title = outArg ? basename(outFolder) : `${date} evals`;
+  // Never write over a file that exists: grades.md can hold Lisa's grades.
+  for (const name of ['grades.md', 'grades-read.md']) {
+    if (existsSync(join(outFolder, name))) throw new Error(`${shown}/${name} already exists. It can hold Lisa's grades, so it is not written over. Move it first.`);
+  }
+  const cases = readCases();
+  const notes = readGradeNotes(readFileSync(new URL('../docs/evals-week-7-checks.md', import.meta.url), 'utf8'));
   mkdirSync(outFolder, { recursive: true });
-  writeFileSync(outFile, gradesMarkdown(runs, readCases(), `${date} evals`));
-  console.log(`Saved runs/${date}-evals/grades.md (${runs.length} runs).`);
+  writeFileSync(join(outFolder, 'grades.md'), gradesMarkdown(runs, cases, title));
+  writeFileSync(join(outFolder, 'grades-read.md'), readingMarkdown(runs, cases, title, notes));
+  console.log(`Saved ${shown}/grades.md and ${shown}/grades-read.md (${runs.length} runs).`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
