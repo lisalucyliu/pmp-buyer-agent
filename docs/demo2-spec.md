@@ -643,6 +643,21 @@ Incoming bubble: "I don't have details about that. Watchtail Pro's product page 
 
 5d. A request that is too big (for example "Compare all the security tools in a table" or "Write a report on these products"): "I can only give short answers about products. Each product page has more details." Then the List items for the products named, at most 5, or the frame 7 clarifying question if more than 5 match. No hand-off line (decided Nov 15, open question 2).
 
+### "Show approved alternatives" after an answer (Lisa, Nov 22)
+
+Source: Lisa, Nov 22, decision 7 of the Week 7 evals handoff part 2.
+
+After an answer, code can add a second support prompt, "Show approved alternatives". The group is vertical and non-editable. Code adds the prompt only when all of these are true:
+
+- The "Request <product name>" prompt shows for that product. The 2 prompts are always in this order: "Request <product name>" first, then "Show approved alternatives".
+- The answer is not a price answer (frame 25 keeps 1 prompt, open question 1).
+- This turn's search found exactly 1 product, and that product is not approved.
+- No alternatives_for search ran this turn.
+- Alternatives were not shown or declined before in this conversation.
+- At least 1 approved product in the buyer's Private Marketplace is in the same category. Code checks the catalog, with no Claude call.
+
+Known gap (Lisa accepted it): a buyer with a pending request for that product gets no prompt.
+
 ### Build notes for row 7
 
 - Search tool result: remove the link field from what Claude gets. Code keeps the link and adds the List items. A free automated test checks that each List item's href is the product page route for that product\_id, and that the request to Claude has no product URL.
